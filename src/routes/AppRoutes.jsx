@@ -5,6 +5,7 @@ import Register from "../pages/auth/Register";
 import Dashboard from "../pages/Dashboard";
 import Admin from "../pages/Admin";
 import Profile from "../pages/Profile";
+import NotFound from "../pages/NotFound";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleProtectedRoute from "./RoleProtectedRoute";
 
@@ -38,6 +39,7 @@ export default function AppRoutes() {
           </RoleProtectedRoute>
         }
       />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
