@@ -1,10 +1,12 @@
+import { useAuth } from "../context/AuthContext";
+
 export default function Dashboard() {
-  const user = JSON.parse(localStorage.getItem("user"));
+  const { user } = useAuth();
 
   return (
     <div>
       <h1>Dashboard</h1>
-      <p>Selamat datang, {user?.name}!</p>
+      <p>Welcome, {user?.name}!</p>
     </div>
   );
 }

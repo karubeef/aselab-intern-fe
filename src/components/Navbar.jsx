@@ -1,23 +1,12 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default function Navbar() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [token, setToken] = useState(localStorage.getItem("token"));
-  const [role, setRole] = useState(null);
-
-  useEffect(() => {
-    setToken(localStorage.getItem("token"));
-    const userData = localStorage.getItem("user");
-    setRole(userData ? JSON.parse(userData).role : null);
-  }, [location]);
+  const { user, isAuthenticated, logout } = useAuth();
 
   function handleLogout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setToken(null);
-    setRole(null);
+    logout();
     navigate("/login");
   }
 
@@ -27,18 +16,17 @@ export default function Navbar() {
       <Link to="/login">Login</Link>
       <Link to="/register">Register</Link>
 
-      {token && <Link to="/dashboard">Dashboard</Link>}
-      {token && role === "SUPER_ADMIN" && <Link to="/admin">Admin</Link>}
+      {isAuthenticated && <Link to="/dashboard">Dashboard</Link>}
+      {isAuthenticated && <Link to="/profile">Profile</Link>}
+      {isAuthenticated && user?.role === "SUPER_ADMIN" && (
+        <Link to="/admin">Admin</Link>
+      )}
 
-      {token && (
+      {isAuthenticated && (
         <button onClick={handleLogout} style={{ marginLeft: "auto" }}>
           Logout
         </button>
       )}
-
-          {token && <Link to="/dashboard">Dashboard</Link>}
-          {token && <Link to="/profile">Profile</Link>}
-          {token && role === "SUPER_ADMIN" && <Link to="/admin">Admin</Link>}
     </nav>
   );
 }

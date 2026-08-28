@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../../api/auth";
 import "./AuthForm.css";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -13,6 +14,8 @@ export default function Login() {
 
   const isFormValid = email.trim() !== "" && password.trim() !== "";
 
+  const { login } = useAuth();
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
@@ -20,10 +23,7 @@ export default function Login() {
 
     try {
       const data = await loginUser({ email, password });
-
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-
+      login(data.token, data.user);
       navigate("/dashboard");
     } catch (err) {
       setError(err.message);
