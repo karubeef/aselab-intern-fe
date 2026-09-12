@@ -187,3 +187,21 @@
   box-sizing: border-box;
   margin-top: 8px;
 }
+
+.btn-outline {
+  display: inline-block;
+  background: white;
+  color: #1273c2;
+  border: 1px solid #1273c2;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+  text-align: center;
+}
+
+.btn-outline:hover {
+  background: #eff6fc;
+}
