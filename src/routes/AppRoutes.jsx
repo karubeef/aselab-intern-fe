@@ -14,6 +14,7 @@ import ReportDetail from "../pages/reports/ReportDetail";
 import AdminReportVerification from "../pages/reports/AdminReportVerification";
 import EditReport from "../pages/reports/EditReport";
 import MapPage from "../pages/MapPage";
+import MyReports from "../pages/reports/MyReports";
 
 export default function AppRoutes() {
   return (
@@ -72,6 +73,14 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute>
             <EditReport />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-reports"
+        element={
+          <ProtectedRoute>
+            <MyReports />
           </ProtectedRoute>
         }
       />
