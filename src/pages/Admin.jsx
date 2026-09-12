@@ -27,7 +27,6 @@ export default function Admin() {
   async function handleRoleChange(userId, newRole) {
     try {
       await updateUserRole(userId, newRole);
-      // Update state lokal supaya tabel langsung ke-update tanpa reload
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
       );

@@ -8,6 +8,12 @@ import Profile from "../pages/Profile";
 import NotFound from "../pages/NotFound";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleProtectedRoute from "./RoleProtectedRoute";
+import ReportList from "../pages/reports/ReportList";
+import CreateReport from "../pages/reports/CreateReport";
+import ReportDetail from "../pages/reports/ReportDetail";
+import AdminReportVerification from "../pages/reports/AdminReportVerification";
+import EditReport from "../pages/reports/EditReport";
+import MapPage from "../pages/MapPage";
 
 export default function AppRoutes() {
   return (
@@ -34,12 +40,45 @@ export default function AppRoutes() {
       <Route
         path="/admin"
         element={
-          <RoleProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+          <RoleProtectedRoute allowedRoles={["ADMIN"]}>
             <Admin />
           </RoleProtectedRoute>
         }
       />
+      <Route 
+        path="/reports" 
+        element={
+          <ReportList />
+      } 
+      />
+      <Route
+        path="/reports/new"
+        element={
+          <ProtectedRoute>
+            <CreateReport />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/admin/verify-reports" 
+        element={
+          <RoleProtectedRoute allowedRoles={["ADMIN"]}>
+            <AdminReportVerification />
+          </RoleProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports/:id/edit"
+        element={
+          <ProtectedRoute>
+            <EditReport />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/map" element={<MapPage />} />
+      <Route path="/reports/:id" element={<ReportDetail />} />
       <Route path="*" element={<NotFound />} />
-    </Routes>
-  );
+      </Routes>
+    );
+  
 }
