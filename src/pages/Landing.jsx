@@ -45,23 +45,23 @@ const FAQS = [
   },
   {
     q: "Berapa lama laporan saya diproses?",
-    a: "Waktu proses tergantung dinas di wilayahmu, tapi rata-rata laporan ditinjau dalam 1-3 hari kerja setelah dikirim.",
+    a: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
   },
   {
     q: "Apa yang terjadi kalau laporan saya ditolak?",
-    a: "Laporan yang ditolak tetap tersimpan di riwayatmu lengkap dengan alasannya, supaya kamu tahu apa yang perlu diperbaiki.",
+    a: "LLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
   },
   {
     q: "Perlu punya akun untuk melihat peta?",
-    a: "Tidak, peta sebaran laporan bisa dilihat siapa saja tanpa akun. Akun hanya diperlukan untuk mengirim laporan.",
+    a: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
   },
   {
     q: "Wilayah mana saja yang sudah aktif?",
-    a: "Saat ini Bali dan Jawa Timur sudah punya dinas terdaftar. Wilayah lain tetap bisa menerima laporan, menunggu dinas setempat bergabung.",
+    a: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
   },
   {
     q: "Apa itu XP dan Ocean Level?",
-    a: "XP dan Ocean Level adalah sistem penghargaan atas kontribusimu — makin banyak laporan valid yang kamu kirim, level kamu makin naik.",
+    a: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
   },
 ];
 

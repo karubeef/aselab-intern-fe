@@ -173,9 +173,6 @@ export default function CreateReport() {
             value={imageUrl}
             onChange={(e) => setImageUrl(e.target.value)}
           />
-          <p className="form-hint">
-            Sementara pakai link foto (upload file langsung belum tersedia di BE).
-          </p>
         </div>
 
         <button type="submit" disabled={!isFormValid || isSubmitting}>
