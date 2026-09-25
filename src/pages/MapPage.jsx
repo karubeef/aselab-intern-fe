@@ -5,8 +5,6 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { getHeatmap, getHeatmapAreaDetail } from "../api/reports";
 
-// Fix bawaan: ikon default Leaflet suka gagal muncul kalau di-bundle Vite,
-// jadi kita set ulang path ikonnya lewat CDN.
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:

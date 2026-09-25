@@ -15,6 +15,7 @@ import AdminReportVerification from "../pages/reports/AdminReportVerification";
 import EditReport from "../pages/reports/EditReport";
 import MapPage from "../pages/MapPage";
 import MyReports from "../pages/reports/MyReports";
+import AdminDashboard from "../pages/AdminDashboard";
 
 export default function AppRoutes() {
   return (
@@ -82,6 +83,14 @@ export default function AppRoutes() {
           <ProtectedRoute>
             <MyReports />
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/dashboard"
+        element={
+          <RoleProtectedRoute allowedRoles={["ADMIN"]}>
+              <AdminDashboard />
+          </RoleProtectedRoute>
         }
       />
       <Route path="/map" element={<MapPage />} />

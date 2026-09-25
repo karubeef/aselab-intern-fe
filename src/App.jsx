@@ -4,7 +4,7 @@ import AppRoutes from "./routes/AppRoutes";
 
 function App() {
   const location = useLocation();
-  const hideNavbar = location.pathname === "/";
+  const hideNavbar = location.pathname === "/" || location.pathname === "/dashboard";
 
   return (
     <>

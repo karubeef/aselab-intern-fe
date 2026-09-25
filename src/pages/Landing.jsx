@@ -191,7 +191,7 @@ export default function Landing() {
             <input
               type="text"
               placeholder="Cari nama pantai, teluk, atau desa..."
-              className="flex-1 rounded-lg px-4 py-3 text-sm outline-none"
+              className="flex-1 rounded-lg px-4 py-3 text-sm outline-none bg-white"
             />
             <Link
               to="/map"
