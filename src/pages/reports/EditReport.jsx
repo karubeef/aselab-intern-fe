@@ -132,7 +132,7 @@ export default function EditReport() {
             </p>
           )}
 
-          {/* Jenis sampah — read-only, tidak bisa diubah lewat edit */}
+          {/* Jenis sampah — read-only, tidak bisa diubah lewat edit karena BE belum buat untuk wasteType*/}
           {wasteTypesDisplay.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">

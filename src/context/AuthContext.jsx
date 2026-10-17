@@ -1,4 +1,5 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
+import { getMe } from "../api/users";
 
 const AuthContext = createContext(null);
 
@@ -8,6 +9,24 @@ export function AuthProvider({ children }) {
     const stored = localStorage.getItem("user");
     return stored ? JSON.parse(stored) : null;
   });
+
+  useEffect(() => {
+    if (!token) return;
+
+    getMe()
+      .then((me) => {
+        const synced = {
+          id: me.id,
+          name: me.name,
+          email: me.email,
+          role: me.role,
+          profilePicture: me.profilePicture,
+        };
+        localStorage.setItem("user", JSON.stringify(synced));
+        setUser(synced);
+      })
+      .catch(() => {});
+  }, [token]);
 
   function login(newToken, newUser) {
     localStorage.setItem("token", newToken);
@@ -23,12 +42,19 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
+  function updateUser(partial) {
+    const merged = { ...user, ...partial };
+    localStorage.setItem("user", JSON.stringify(merged));
+    setUser(merged);
+  }
+
   const value = {
     token,
     user,
     isAuthenticated: !!token,
     login,
     logout,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

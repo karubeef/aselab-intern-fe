@@ -1,17 +1,8 @@
-import { useLocation } from "react-router-dom";
-import Navbar from "./components/Navbar";
+
 import AppRoutes from "./routes/AppRoutes";
 
 function App() {
-  const location = useLocation();
-  const hideNavbar = location.pathname === "/" || location.pathname === "/dashboard";
-
-  return (
-    <>
-      {!hideNavbar && <Navbar />}
-      <AppRoutes />
-    </>
-  );
+  return <AppRoutes />;
 }
 
 export default App;

@@ -45,7 +45,3 @@ export const STATUS_COLORS = {
   IN_PROGRESS: "bg-orange-50 text-orange-700",
   RESOLVED: "bg-green-50 text-green-700",
 };
-
-export function getPlaceholderPhotoUrl(index) {
-  return `https://placehold.co/600x400?text=Foto+${index + 1}`;
-}

@@ -9,11 +9,13 @@ export default function Login() {
   const { login } = useAuth();
   const [searchParams] = useSearchParams();
   const sessionExpired = searchParams.get("expired") === "true";
+  const resetSuccess = searchParams.get("reset") === "success";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
 
   const isFormValid = email.trim() !== "" && password.trim() !== "";
 
@@ -25,7 +27,7 @@ export default function Login() {
     try {
       const data = await loginUser({ email, password });
       login(data.token, data.user);
-      navigate("/dashboard");
+      navigate(data.user.role === "ADMIN" ? "/admin/dashboard" : "/dashboard");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -55,6 +57,11 @@ export default function Login() {
         </Link>
       </div>
 
+      {resetSuccess && (
+        <p className="bg-green-50 text-green-700 text-sm rounded-lg px-4 py-3 mb-4">
+          Kata sandi berhasil diubah, silakan masuk dengan kata sandi baru.
+        </p>
+      )}
       {sessionExpired && (
         <p className="bg-red-50 text-red-600 text-sm rounded-lg px-4 py-3 mb-4">
           Sesi kamu telah berakhir, silakan login lagi.
@@ -94,9 +101,9 @@ export default function Login() {
         </div>
 
         <div className="text-right">
-          <a href="#lupa-password" className="text-[#1179C4] text-sm">
+          <Link to="/forgot-password" className="text-[#1179C4] text-sm">
             Lupa Password?
-          </a>
+          </Link>
         </div>
 
         <button

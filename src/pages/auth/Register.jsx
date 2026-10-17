@@ -14,7 +14,7 @@ export default function Register() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const hasMinLength = password.length >= 6;
+  const hasMinLength = password.length >= 8;
   const hasLetter = /[a-zA-Z]/.test(password);
   const hasNumberAndSymbol =
     /[0-9]/.test(password) &&
@@ -114,7 +114,7 @@ export default function Register() {
           {password.length > 0 && (
             <ul className="mt-2 flex flex-col gap-1 text-xs">
               <li className={hasMinLength ? "text-green-600" : "text-slate-400"}>
-                {hasMinLength ? "✓" : "✕"} Minimal 6 karakter
+                {hasMinLength ? "✓" : "✕"} Minimal 8 karakter
               </li>
               <li className={hasLetter ? "text-green-600" : "text-slate-400"}>
                 {hasLetter ? "✓" : "✕"} Mengandung huruf
@@ -166,7 +166,7 @@ export default function Register() {
           disabled={!isFormValid || isSubmitting}
           className="bg-[#1179C4] hover:bg-[#0f6aab] disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-lg mt-2"
         >
-          {isSubmitting ? "Mendaftarkan..." : "Daftar & Verifikasi OTP"}
+          {isSubmitting ? "Mendaftarkan..." : "Daftar"}
         </button>
 
         <p className="text-center text-sm text-slate-500">

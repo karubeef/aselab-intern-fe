@@ -1,3 +1,4 @@
+
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -11,27 +12,47 @@ export default function Navbar() {
   }
 
   return (
-    <nav style={{ display: "flex", gap: "16px", padding: "12px", alignItems: "center" }}>
+    <nav
+      style={{
+        display: "flex",
+        gap: "16px",
+        padding: "12px",
+        alignItems: "center",
+      }}
+    >
       <Link to="/">Landing</Link>
       <Link to="/login">Login</Link>
       <Link to="/register">Register</Link>
       <Link to="/reports">Laporan</Link>
       <Link to="/map">Peta</Link>
-      
 
-      {isAuthenticated && <Link to="/dashboard">Dashboard</Link>}
-      {isAuthenticated && <Link to="/profile">Profile</Link>}
-      {isAuthenticated && <Link to="/my-reports">Laporan Saya</Link>}
-      
-      {isAuthenticated && user?.role === "ADMIN" && (
-        <Link to="/admin">Admin</Link>
-      )}
-      {isAuthenticated && user?.role === "ADMIN" && (
-        <Link to="/admin/verify-reports">Verifikasi Laporan</Link>
+      {isAuthenticated && (
+        <Link to="/dashboard">Dashboard</Link>
       )}
 
       {isAuthenticated && (
-        <button onClick={handleLogout} style={{ marginLeft: "auto" }}>
+        <Link to="/profile">Profile</Link>
+      )}
+
+      {isAuthenticated && (
+        <Link to="/my-reports">Laporan Saya</Link>
+      )}
+
+      {isAuthenticated && user?.role === "ADMIN" && (
+        <Link to="/admin">Admin</Link>
+      )}
+
+      {isAuthenticated && user?.role === "ADMIN" && (
+        <Link to="/admin/manage-reports">
+          Kelola Laporan
+        </Link>
+      )}
+
+      {isAuthenticated && (
+        <button
+          onClick={handleLogout}
+          style={{ marginLeft: "auto" }}
+        >
           Logout
         </button>
       )}

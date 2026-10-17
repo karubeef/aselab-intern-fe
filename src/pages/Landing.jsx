@@ -1,417 +1,489 @@
-import { useState, useEffect } from "react";
+
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import landingImage1 from "../assets/oceanGuard_landingPage.jpg";
-import landingImage2 from "../assets/oceanGuard_landingPageImage2.png";
+import {
+  CircleMarker,
+  MapContainer,
+  Popup,
+  TileLayer,
+  useMap,
+} from "react-leaflet";
+import "leaflet/dist/leaflet.css";
 
-const LANDING_IMAGES = [landingImage1, landingImage2];
+import PublicNavbar from "../components/public/PublicNavbar";
+import PublicFooter from "../components/public/PublicFooter";
+import PublicArticleCard from "../components/public/PublicArticleCard";
 
-const STEPS_3 = [
+import { getAllInformasi } from "../api/informasi";
+import { getHeatmap } from "../api/reports";
+
+import heroImage from "../assets/oceanGuard_landingPage.jpg";
+
+const steps = [
   {
     number: "01",
     title: "Foto sampahnya",
-    desc: "Ambil foto langsung dari HP. Lokasi terisi otomatis lewat GPS.",
+    description: "Ambil foto kondisi sampah sebagai bukti pelaporan.",
   },
   {
     number: "02",
     title: "Kirim laporan",
-    desc: "Pilih jenis sampah dan tingkat keparahan. Tidak perlu isi form panjang.",
+    description: "Tentukan lokasi, jenis sampah, dan tingkat keparahan.",
   },
   {
     number: "03",
     title: "Pantau sampai selesai",
-    desc: "Status berubah setiap kali dinas mengambil tindakan. Kamu selalu diberi tahu.",
+    description: "Pantau status setelah laporan diperiksa Admin.",
   },
 ];
 
-const FLOW_6 = [
-  { number: 1, title: "Terkirim", desc: "Laporanmu tercatat" },
-  { number: 2, title: "Ditinjau", desc: "Admin memeriksa bukti" },
-  { number: 3, title: "Diverifikasi", desc: "Muncul di peta publik" },
-  { number: 4, title: "Ditugaskan", desc: "Diteruskan ke petugas" },
-  { number: 5, title: "Ditangani", desc: "Petugas turun ke lokasi" },
-  { number: 6, title: "Selesai", desc: "Ada foto sesudahnya" },
+const statuses = [
+  "Terkirim",
+  "Ditinjau",
+  "Diverifikasi",
+  "Ditugaskan",
+  "Ditangani",
+  "Selesai",
 ];
 
-const REGIONS = [
-  { name: "Bali", desc: "5 kabupaten · 3 dinas aktif" },
-  { name: "Jawa Timur", desc: "2 kabupaten · 1 dinas aktif" },
-  { name: "Wilayah lain", desc: "Belum ada dinas terdaftar" },
+const faqs = [
+  {
+    question: "Apakah lokasi rumah saya ikut terekam?",
+    answer:
+      "Lokasi yang ditampilkan pada peta publik merupakan lokasi laporan sampah, bukan riwayat perjalanan pengguna.",
+  },
+  {
+    question: "Berapa lama laporan saya diproses?",
+    answer:
+      "Waktu proses bergantung pada peninjauan Admin dan penanganan oleh petugas.",
+  },
+  {
+    question: "Apa yang terjadi kalau laporan saya ditolak?",
+    answer:
+      "Laporan ditandai sebagai ditolak dengan alasan yang dapat dilihat pengguna.",
+  },
+  {
+    question: "Perlu punya akun untuk melihat peta?",
+    answer:
+      "Tidak. Peta publik dapat dibuka tanpa login. Untuk mengirim laporan, pengguna perlu masuk.",
+  },
+  {
+    question: "Wilayah mana saja yang sudah aktif?",
+    answer:
+      "Wilayah aktif bergantung pada ketersediaan instansi yang bekerja sama dengan OceanGuard.",
+  },
+  {
+    question: "Apa itu XP dan Ocean Level?",
+    answer:
+      "XP merupakan poin kontribusi pengguna. Ocean Level menunjukkan perkembangan aktivitas yang memenuhi kriteria sistem.",
+  },
 ];
 
-const FAQS = [
-  {
-    q: "Apakah lokasi rumah saya ikut terekam?",
-    a: "Tidak. Yang disimpan hanya titik koordinat sampah yang kamu tandai, bukan riwayat perjalananmu. Izin GPS hanya dipakai saat kamu membuat laporan.",
-  },
-  {
-    q: "Berapa lama laporan saya diproses?",
-    a: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-  },
-  {
-    q: "Apa yang terjadi kalau laporan saya ditolak?",
-    a: "LLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-  },
-  {
-    q: "Perlu punya akun untuk melihat peta?",
-    a: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-  },
-  {
-    q: "Wilayah mana saja yang sudah aktif?",
-    a: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-  },
-  {
-    q: "Apa itu XP dan Ocean Level?",
-    a: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-  },
-];
+const primaryBtn =
+  "inline-flex items-center justify-center rounded-lg bg-[#0B3D91] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#082C6B]";
 
-export default function Landing() {
-  const [openFaq, setOpenFaq] = useState(0);
-  const [activeImage, setActiveImage] = useState(0);
+const secondaryBtn =
+  "inline-flex items-center justify-center rounded-lg bg-white px-6 py-3 text-sm font-semibold text-[#0B3D91] transition-colors hover:bg-blue-50";
+
+function getDensityColor(total) {
+  if (total >= 6) return "#DC2626";
+  if (total >= 3) return "#F97316";
+  return "#15803D";
+}
+
+function MapBounds({ points }) {
+  const map = useMap();
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveImage((prev) => (prev + 1) % LANDING_IMAGES.length);
-    }, 30000);
+    if (!points.length) return;
 
-    return () => clearInterval(interval);
+    if (points.length === 1) {
+      map.setView(points[0], 14);
+      return;
+    }
+
+    map.fitBounds(points, {
+      padding: [45, 45],
+      maxZoom: 14,
+      animate: false,
+    });
+  }, [map, points]);
+
+  return null;
+}
+
+export default function Landing() {
+  const [articles, setArticles] = useState([]);
+  const [areas, setAreas] = useState([]);
+  const [articleLoading, setArticleLoading] = useState(true);
+  const [mapLoading, setMapLoading] = useState(true);
+  const [articleError, setArticleError] = useState("");
+  const [mapError, setMapError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    getAllInformasi()
+      .then((result) => {
+        if (active) {
+          setArticles(Array.isArray(result) ? result : []);
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          setArticleError(
+            error.message || "Gagal memuat artikel."
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setArticleLoading(false);
+      });
+
+    getHeatmap()
+      .then((result) => {
+        if (active) {
+          setAreas(Array.isArray(result) ? result : []);
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          setMapError(
+            error.message || "Gagal memuat peta."
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setMapLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  function toggleFaq(index) {
-    setOpenFaq((prev) => (prev === index ? -1 : index));
-  }
+  const totalReports = useMemo(() => {
+    return areas.reduce(
+      (sum, area) => sum + Number(area.totalReports || 0),
+      0
+    );
+  }, [areas]);
+
+  const validPoints = useMemo(() => {
+    return areas.filter((area) => {
+      return (
+        area.centerLat != null &&
+        area.centerLon != null &&
+        Number.isFinite(Number(area.centerLat)) &&
+        Number.isFinite(Number(area.centerLon))
+      );
+    });
+  }, [areas]);
+
+  const coordinates = useMemo(() => {
+    return validPoints.map((area) => [
+      Number(area.centerLat),
+      Number(area.centerLon),
+    ]);
+  }, [validPoints]);
 
   return (
-    <div className="relative font-sans text-slate-800 w-full">
-      {/* Satu gradient tunggal, membentang seluruh tinggi halaman, jadi "latar belakang" di balik semua section */}
-      <div
-        className="absolute inset-0 -z-10"
-        style={{
-          background:
-            "linear-gradient(to bottom, #0555A7 0px, #0555A7 650px, #023890 2000px, #0D143F 3200px, #0D143F 100%)",
-        }}
-      />
-
-      {/* Navbar + Hero */}
-      <div className="relative h-[650px] overflow-hidden">
-        {LANDING_IMAGES.map((img, index) => (
-          <img
-            key={img}
-            src={img}
-            alt="Laut Indonesia"
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
-              index === activeImage ? "opacity-100" : "opacity-0"
-            }`}
-          />
-        ))}
-
-        {/* Overlay gelap tipis supaya teks putih tetap kebaca */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/5 to-[#0555A7]/40" />
-
-        {/* Fade dasar foto, melebur ke gradient global di baliknya */}
-        <div
-          className="absolute bottom-0 left-0 right-0 h-64"
-          style={{
-            background:
-              "linear-gradient(to bottom, transparent 0%, rgba(39,109,166,0.3) 40%, rgba(39,109,166,0.75) 70%, #0555A7 100%)",
-          }}
+    <div className="min-h-screen overflow-x-hidden bg-white font-sans text-slate-900">
+      <section className="relative min-h-[680px] overflow-hidden bg-[#07559E]">
+        <img
+          src={heroImage}
+          alt="Laut OceanGuard"
+          className="absolute inset-0 h-full w-full object-cover object-center"
         />
 
-        <header className="relative z-10 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
-          <span className="text-white font-bold text-lg tracking-wide">
-            OCEANGUARD
-          </span>
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#031C43]/35 via-[#063A77]/10 to-[#07559E]" />
 
-          <nav className="hidden md:flex gap-8 text-white text-sm">
-            <a href="#peta">Peta</a>
-            <a href="#cara-kerja">Cara Kerja</a>
-            <a href="#informasi">Informasi</a>
-            <a href="#faq">FAQ</a>
-            <a href="#dinas">Untuk Dinas</a>
-          </nav>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[360px] bg-gradient-to-b from-transparent via-[#07559E]/50 to-[#07559E]" />
 
-          <div className="flex items-center gap-4">
-            <Link to="/login" className="text-white text-sm">
-              Masuk
-            </Link>
-            <Link
-              to="/register"
-              className="bg-blue-800 hover:bg-blue-900 text-white text-sm font-semibold px-5 py-2.5 rounded-lg"
-            >
-              Daftar
-            </Link>
-          </div>
-        </header>
+        <div className="relative z-20">
+          <PublicNavbar transparent />
+        </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-8 pt-28 pb-40">
-          <div className="max-w-2xl">
-            <h1 className="text-white text-5xl font-bold leading-tight mb-5">
+        <div className="relative z-10 mx-auto flex min-h-[620px] max-w-7xl items-center px-6 pb-32 pt-24 sm:px-8">
+          <div className="max-w-3xl text-white">
+            <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
               Sampah di laut tidak hilang sendiri.
             </h1>
-            <p className="text-white/90 text-lg mb-7">
-              Foto, kirim lokasi, dan pantau sampai benar-benar ditangani dinas
-              setempat. Butuh dua menit.
+
+            <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/90 sm:text-lg">
+              Foto, kirim lokasi, dan pantau sampai benar-benar
+              ditangani dinas setempat. Butuh dua menit.
             </p>
-            <div className="flex gap-3 mb-4">
-              <Link
-                to="/reports/new"
-                className="bg-blue-800 hover:bg-blue-900 text-white font-semibold px-6 py-3 rounded-lg"
-              >
+
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link to="/reports/new" className={primaryBtn}>
                 Lapor Sekarang
               </Link>
-              <Link
-                to="/map"
-                className="bg-white hover:bg-slate-100 text-slate-800 font-semibold px-6 py-3 rounded-lg"
-              >
+
+              <Link to="/public-map" className={secondaryBtn}>
                 Lihat Peta
               </Link>
             </div>
-            <p className="text-white/70 text-sm">
-              Gratis · Tanpa aplikasi · Bisa dari HP
-            </p>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Map preview section — transparan, biar gradient global keliatan */}
-      <section id="peta" className="bg-transparent px-8 py-20 w-full">
-        <div className="max-w-4xl mx-auto text-center">
-          <p className="text-blue-200 text-xs font-semibold tracking-widest mb-3">
-            LIHAT SENDIRI
-          </p>
-          <h2 className="text-white text-3xl md:text-4xl font-bold mb-3">
-            Bagaimana kondisi pantai di dekatmu?
-          </h2>
-          <p className="text-blue-100 text-base mb-8">
-            Peta ini menampilkan laporan yang sudah diverifikasi. Cari nama
-            pantai atau geser ke wilayahmu.
-          </p>
+      <section
+        id="peta"
+        className="relative -mt-px bg-[#07559E] px-5 pb-12 pt-8 text-white"
+      >
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-10 text-center">
+            <h2 className="text-3xl font-bold">
+              Bagaimana kondisi pantai di dekatmu?
+            </h2>
 
-          <div className="flex gap-3 mb-6">
-            <input
-              type="text"
-              placeholder="Cari nama pantai, teluk, atau desa..."
-              className="flex-1 rounded-lg px-4 py-3 text-sm outline-none bg-white"
-            />
-            <Link
-              to="/map"
-              className="bg-white hover:bg-slate-100 text-slate-800 font-semibold px-6 py-3 rounded-lg whitespace-nowrap"
+            <p className="mt-3 text-blue-100">
+              Lihat persebaran laporan sampah yang sudah diverifikasi.
+            </p>
+          </div>
+
+          <div className="relative overflow-hidden rounded-xl bg-white shadow-[0_20px_60px_rgba(0,20,60,0.18)]">
+            <MapContainer
+              center={[-2.5, 118]}
+              zoom={5}
+              scrollWheelZoom={false}
+              className="h-[420px] w-full sm:h-[470px]"
             >
-              Buka Peta Lengkap
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+
+              <MapBounds points={coordinates} />
+
+              {validPoints.map((area) => {
+                const total = Number(area.totalReports || 0);
+                const color = getDensityColor(total);
+
+                return (
+                  <CircleMarker
+                    key={area.areaId}
+                    center={[
+                      Number(area.centerLat),
+                      Number(area.centerLon),
+                    ]}
+                    radius={Math.max(9, Math.min(20, 9 + total))}
+                    pathOptions={{
+                      color: "#FFFFFF",
+                      weight: 2,
+                      fillColor: color,
+                      fillOpacity: 0.9,
+                    }}
+                  >
+                    <Popup>
+                      <div className="min-w-[170px]">
+                        <strong>Area {area.areaId}</strong>
+
+                        <p>
+                          {area.latestReport?.locationName ||
+                            "Area laporan"}
+                        </p>
+
+                        <p>{total} laporan terverifikasi</p>
+                      </div>
+                    </Popup>
+                  </CircleMarker>
+                );
+              })}
+            </MapContainer>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="font-medium text-white">
+                {mapLoading
+                  ? "Memuat data peta..."
+                  : mapError
+                    ? "Data peta belum dapat dimuat"
+                    : `${totalReports} laporan terverifikasi`}
+              </p>
+
+              <p className="mt-1 text-sm text-blue-100">
+                {areas.length} area laporan terverifikasi
+              </p>
+            </div>
+
+            <Link
+              to="/public-map"
+              className="inline-flex items-center justify-center rounded-lg bg-[#083780] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#062A63]"
+            >
+              Buka Peta Lengkap →
             </Link>
           </div>
+        </div>
+      </section>
 
-          <div className="bg-slate-200 border border-dashed border-slate-400 rounded-lg h-72 flex items-center justify-center px-10">
-            <p className="text-slate-500 text-sm text-center">
-              [Preview Peta Sebaran Laporan — Heatmap + Marker Laporan Terbaru]
-            </p>
+      <section
+        id="cara-kerja"
+        className="bg-white px-5 pb-20 pt-16"
+      >
+        <div className="mx-auto max-w-6xl">
+          <h2 className="mb-9 text-center text-3xl font-bold text-[#0B3D91]">
+            Tiga langkah, selesai dalam dua menit
+          </h2>
+
+          <div className="grid gap-5 md:grid-cols-3">
+            {steps.map((step) => (
+              <div
+                key={step.number}
+                className="rounded-xl border border-blue-200 bg-white p-6 transition-shadow hover:shadow-md"
+              >
+                <p className="text-sm text-slate-400">
+                  {step.number}
+                </p>
+
+                <h3 className="mt-3 text-lg font-semibold">
+                  {step.title}
+                </h3>
+
+                <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                  {step.description}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* 3 steps — putih solid, menutupi gradient */}
-      <section id="cara-kerja" className="px-8 py-20 w-full bg-white">
-        <h2 className="text-center text-3xl md:text-4xl font-bold mb-12">
-          Tiga langkah, selesai dalam dua menit
-        </h2>
-
-        <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-5">
-          {STEPS_3.map((step) => (
-            <div key={step.number} className="border border-slate-200 rounded-xl p-6">
-              <p className="text-slate-400 text-sm mb-3">{step.number}</p>
-              <h3 className="font-semibold text-lg mb-2">{step.title}</h3>
-              <p className="text-slate-500 text-sm">{step.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 6-step flow — transparan */}
-      <section className="bg-transparent px-8 py-20 w-full">
-        <div className="max-w-5xl mx-auto text-center">
-          <p className="text-blue-200 text-xs font-semibold tracking-widest mb-3">
-            YANG TERJADI SETELAH KAMU LAPOR
-          </p>
-          <h2 className="text-white text-3xl md:text-4xl font-bold mb-3">
+      <section className="bg-[#07559E] px-5 pb-20 pt-20 text-white">
+        <div className="mx-auto max-w-6xl">
+          <h2 className="text-center text-3xl font-bold">
             Laporanmu tidak berhenti di kotak masuk
           </h2>
-          <p className="text-blue-100 text-base mb-10">
-            Setiap laporan melewati tahapan ini, dan kamu bisa melihat
-            posisinya kapan saja.
+
+          <p className="mt-3 text-center text-blue-100">
+            Setiap laporan memiliki tahapan yang dapat dipantau.
           </p>
 
-          <div className="bg-[#0D143F] rounded-2xl p-8 grid grid-cols-2 md:grid-cols-6 gap-6">
-            {FLOW_6.map((step) => (
-              <div key={step.number}>
-                <div className="w-9 h-9 mx-auto mb-3 rounded-full bg-slate-100 text-slate-800 flex items-center justify-center text-sm font-semibold">
-                  {step.number}
+          <div className="mt-9 grid grid-cols-2 gap-4 rounded-2xl border border-white/25 bg-white/5 p-6 md:grid-cols-6">
+            {statuses.map((status, index) => (
+              <div key={status} className="text-center">
+                <div className="mx-auto mb-3 grid h-10 w-10 place-items-center rounded-full bg-white/15 font-bold">
+                  {index + 1}
                 </div>
-                <h4 className="text-blue-300 font-semibold text-sm mb-1">
-                  {step.title}
-                </h4>
-                <p className="text-white/70 text-xs">{step.desc}</p>
+
+                <p className="text-sm font-medium">
+                  {status}
+                </p>
               </div>
             ))}
           </div>
 
-          <p className="text-blue-200 text-sm mt-8 text-left max-w-5xl mx-auto">
-            Laporan yang ditolak tetap tersimpan di riwayatmu, lengkap dengan
-            alasannya.
+          <p className="mt-7 text-center text-sm text-blue-100">
+            Laporan yang ditolak tetap tersimpan di riwayat,
+            lengkap dengan alasannya.
           </p>
         </div>
       </section>
 
-      {/* Regions — putih solid */}
-      <section id="informasi" className="px-8 py-20 w-full bg-white">
-        <h2 className="text-center text-3xl md:text-4xl font-bold mb-12">
-          Wilayah yang sudah punya dinas terdaftar
-        </h2>
+      <section
+        id="informasi"
+        className="bg-[#07559E] px-5 pb-24 pt-12 text-white"
+      >
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-7 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-3xl font-bold">
+                Informasi & Edukasi
+              </h2>
 
-        <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-5 mb-6">
-          {REGIONS.map((r) => (
-            <div key={r.name} className="border border-slate-200 rounded-xl p-6">
-              <h3 className="font-semibold text-lg mb-1">{r.name}</h3>
-              <p className="text-slate-500 text-sm">{r.desc}</p>
+              <p className="mt-2 text-blue-100">
+                Artikel edukasi terbaru yang diterbitkan Admin.
+              </p>
             </div>
-          ))}
-        </div>
 
-        <div className="max-w-5xl mx-auto bg-slate-100 rounded-lg px-6 py-4">
-          <p className="text-slate-500 text-sm">
-            Di luar wilayah tersebut laporanmu tetap tercatat dan tampil di
-            peta publik, tapi belum ada instansi yang menanganinya. Kami akan
-            memberi tahu begitu wilayahmu aktif.
+            <Link
+              to="/informasi"
+              className="text-sm font-semibold hover:underline"
+            >
+              Lihat semua →
+            </Link>
+          </div>
+
+          {articleLoading ? (
+            <p>Memuat artikel...</p>
+          ) : articleError ? (
+            <p
+              role="alert"
+              className="rounded-lg bg-white p-4 text-red-600"
+            >
+              {articleError}
+            </p>
+          ) : articles.length === 0 ? (
+            <div className="rounded-xl bg-white p-10 text-center text-slate-500">
+              Belum ada artikel dari Admin.
+            </div>
+          ) : (
+            <div className="grid gap-5 md:grid-cols-3">
+              {articles.slice(0, 3).map((article) => (
+                <PublicArticleCard
+                  key={article.id}
+                  article={article}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section
+        id="faq"
+        className="bg-white px-5 pb-24 pt-20"
+      >
+        <div className="mx-auto max-w-4xl">
+          <h2 className="mb-8 text-center text-3xl font-bold text-[#0B3D91]">
+            Pertanyaan yang sering ditanyakan
+          </h2>
+
+          <div className="space-y-3">
+            {faqs.map((faq, index) => (
+              <details
+                key={faq.question}
+                open={index === 0}
+                className="group rounded-lg border border-slate-200 bg-white p-5"
+              >
+                <summary className="cursor-pointer font-medium">
+                  {faq.question}
+                </summary>
+
+                <p className="mt-3 text-sm leading-relaxed text-slate-500">
+                  {faq.answer}
+                </p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-[#102D69] px-5 py-20 text-center text-white">
+        <div className="mx-auto max-w-4xl">
+          <h2 className="text-3xl font-bold">
+            Ada sampah di pantai dekat rumahmu?
+          </h2>
+
+          <p className="mt-3 text-blue-100">
+            Butuh dua menit. Foto, kirim, lalu pantau sampai selesai.
           </p>
-        </div>
-      </section>
 
-      {/* Admin panel promo — transparan */}
-      <section id="dinas" className="bg-transparent px-8 py-20 w-full">
-        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10 items-center">
-          <div>
-            <p className="text-blue-300 text-xs font-semibold tracking-widest mb-3">
-              UNTUK DINAS & INSTANSI
-            </p>
-            <h2 className="text-white text-3xl md:text-4xl font-bold mb-4">
-              Satu panel untuk seluruh laporan warga di wilayah kerja Anda
-            </h2>
-            <p className="text-blue-100 text-base mb-6">
-              Verifikasi laporan, tugaskan petugas, dan catat bukti
-              penyelesaian dalam satu alur yang terekam. Akun dibuat oleh tim
-              kami setelah kerja sama disepakati.
-            </p>
-            <div className="flex gap-3">
-              
-                <a href="mailto:hello@oceanguard.id"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg"
-              >
-                Hubungi Kami
-              </a>
-              <Link
-                to="/admin/verify-reports"
-                className="bg-white/10 hover:bg-white/20 text-white font-semibold px-6 py-3 rounded-lg border border-blue-300/30"
-              >
-                Lihat Panel Admin
-              </Link>
-            </div>
-          </div>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link to="/reports/new" className={primaryBtn}>
+              Lapor Sekarang
+            </Link>
 
-          <div className="bg-slate-200 rounded-xl h-64 flex items-center justify-center">
-            <p className="text-slate-500 text-sm">[Tangkapan Layar Panel Admin]</p>
+            <Link to="/register" className={secondaryBtn}>
+              Buat Akun Gratis
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* FAQ — putih solid */}
-      <section id="faq" className="px-8 py-20 w-full bg-white">
-        <h2 className="text-center text-3xl md:text-4xl font-bold mb-12">
-          Pertanyaan yang sering ditanyakan
-        </h2>
-
-        <div className="max-w-3xl mx-auto flex flex-col gap-3">
-          {FAQS.map((faq, index) => (
-            <div key={faq.q} className="border border-slate-200 rounded-lg">
-              <button
-                onClick={() => toggleFaq(index)}
-                className="w-full flex items-center justify-between px-5 py-4 text-left font-medium text-base"
-              >
-                {faq.q}
-                <span className="text-slate-400 text-xl">
-                  {openFaq === index ? "−" : "+"}
-                </span>
-              </button>
-
-              {openFaq === index && (
-                <p className="px-5 pb-4 text-slate-500 text-sm">{faq.a}</p>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Final CTA — transparan, paling gelap */}
-      <section className="bg-transparent px-8 py-20 text-center w-full">
-        <h2 className="text-white text-3xl md:text-4xl font-bold mb-3">
-          Ada sampah di pantai dekat rumahmu?
-        </h2>
-        <p className="text-blue-200 text-base mb-8">
-          Butuh dua menit. Foto, kirim, lalu pantau sampai selesai.
-        </p>
-        <div className="flex gap-3 justify-center">
-          <Link
-            to="/reports/new"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg"
-          >
-            Lapor Sekarang
-          </Link>
-          <Link
-            to="/register"
-            className="bg-white hover:bg-slate-100 text-slate-800 font-semibold px-6 py-3 rounded-lg"
-          >
-            Buat Akun Gratis
-          </Link>
-        </div>
-      </section>
-
-      {/* Footer — putih solid */}
-      <footer className="px-8 py-16 w-full bg-white">
-        <div className="max-w-5xl mx-auto grid md:grid-cols-4 gap-8">
-          <div>
-            <h4 className="font-bold text-lg mb-2">OCEANGUARD</h4>
-            <p className="text-slate-500 text-sm">
-              Platform pelaporan sampah laut dan pesisir. Mendukung SDG 14,
-              11, dan 17.
-            </p>
-          </div>
-
-          <div>
-            <h5 className="font-semibold text-sm mb-3">Platform</h5>
-            <ul className="text-slate-500 text-sm flex flex-col gap-2">
-              <li><a href="#peta">Peta Sebaran</a></li>
-              <li><a href="#cara-kerja">Cara Kerja</a></li>
-              <li><a href="#informasi">Informasi & Edukasi</a></li>
-              <li><a href="#faq">FAQ</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h5 className="font-semibold text-sm mb-3">Untuk Dinas</h5>
-            <ul className="text-slate-500 text-sm flex flex-col gap-2">
-              <li><Link to="/admin/verify-reports">Panel Admin</Link></li>
-              <li><a href="mailto:hello@oceanguard.id">Hubungi Kami</a></li>
-              <li><a href="#dinas">Kerja Sama</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h5 className="font-semibold text-sm mb-3">Legal</h5>
-            <ul className="text-slate-500 text-sm flex flex-col gap-2">
-              <li><a href="#syarat">Syarat & Ketentuan</a></li>
-              <li><a href="#privasi">Kebijakan Privasi</a></li>
-            </ul>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

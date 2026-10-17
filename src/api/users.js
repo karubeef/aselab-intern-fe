@@ -1,53 +1,35 @@
-const API_URL = import.meta.env.VITE_API_URL;
 
-function authHeaders() {
-  const token = localStorage.getItem("token");
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
+import { apiRequest } from "./client";
+
+export function getMe() {
+  return apiRequest("/users/me")
+    .then((data) => data.user);
 }
 
-export async function getMe() {
-  const res = await fetch(`${API_URL}/users/me`, {
-    headers: authHeaders(),
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Gagal mengambil data user");
-  }
-
-  return data.user;
+export function getAllUsers() {
+  return apiRequest("/users")
+    .then((data) => data.users);
 }
 
-export async function getAllUsers() {
-  const res = await fetch(`${API_URL}/users`, {
-    headers: authHeaders(),
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Gagal mengambil daftar user");
-  }
-
-  return data.users;
-}
-
-export async function updateUserRole(id, role) {
-  const res = await fetch(`${API_URL}/users/${id}/role`, {
+export function updateUserRole(id, role) {
+  return apiRequest(`/users/${id}/role`, {
     method: "PATCH",
-    headers: authHeaders(),
     body: JSON.stringify({ role }),
+  }).then((data) => data.user);
+}
+
+export function updateProfile(payload) {
+  return apiRequest("/users/profile", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+    skipAuthRedirect: Boolean(payload.currentPassword),
+  }).then((data) => data.user);
+}
+
+export function deleteMyAccount(password) {
+  return apiRequest("/users/me", {
+    method: "DELETE",
+    body: JSON.stringify({ password }),
+    skipAuthRedirect: true,
   });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Gagal mengubah role");
-  }
-
-  return data.user;
 }

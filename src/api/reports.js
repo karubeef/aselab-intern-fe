@@ -9,7 +9,9 @@ export function createReport(reportData) {
 
 export function getAllReports(status) {
   const query = status ? `?status=${status}` : "";
-  return apiRequest(`/reports${query}`).then((data) => data.reports);
+  return apiRequest(`/reports${query}`).then(
+    (data) => data.reports
+  );
 }
 
 export function getReportById(id) {
@@ -40,4 +42,16 @@ export function getHeatmap() {
 
 export function getHeatmapAreaDetail(areaId) {
   return apiRequest(`/reports/map/${areaId}`);
+}
+
+export function updateReportStatus(id, status) {
+  return apiRequest(`/reports/${id}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  }).then((data) => data.report);
+}
+
+export function getMyReports(status) {
+  const query = status ? `?status=${status}` : "";
+  return apiRequest(`/reports/me${query}`).then((data) => data.reports);
 }
