@@ -1,4 +1,7 @@
+
 import { Link } from "react-router-dom";
+import logo from "../../assets/oceanguard-logo-w.png";
+import background from "../../assets/oceanguard-auth.png";
 
 const STATS = [
   { value: "14.8K", label: "Laporan Masuk" },
@@ -9,55 +12,73 @@ const STATS = [
 
 export default function AuthLayout({ children }) {
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Panel kiri */}
-      <div className="bg-[#1179C4] text-white w-full md:w-1/2 flex flex-col justify-between p-12">
-        <div className="flex items-center gap-3">
-          <span className="w-9 h-9 rounded-full bg-white flex items-center justify-center">
-            <span className="w-3 h-3 rounded-full bg-[#1179C4]" />
-          </span>
-          <span className="font-bold text-lg">OceanGuard</span>
-        </div>
+    <main className="grid min-h-screen grid-cols-1 bg-white md:grid-cols-2">
+      <section
+        className="relative flex min-h-[390px] flex-col overflow-hidden bg-[#063D66] bg-cover bg-center bg-no-repeat text-white md:min-h-screen"
+        style={{ backgroundImage: `url(${background})` }}
+      >
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#00385B]/10 via-transparent to-[#002440]/35" />
 
-        <div className="py-12">
-          <h1 className="text-5xl font-bold leading-tight mb-6">
-            Protect Our
-            <br />
-            Ocean,
-            <br />
-            Together.
-          </h1>
-          <p className="text-white/85 text-base mb-10 max-w-sm">
-            Bergabung dengan ribuan relawan yang aktif menjaga kebersihan laut
-            Indonesia setiap harinya.
-          </p>
-
-          <div className="grid grid-cols-2 gap-4 max-w-md">
-            {STATS.map((stat) => (
-              <div key={stat.label} className="bg-white/10 rounded-lg p-5">
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-white/80 text-sm">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <p className="text-white/70 text-sm">© 2026 OceanGuard</p>
-      </div>
-
-      {/* Panel kanan */}
-      <div className="w-full md:w-1/2 bg-slate-50 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
+        <div className="relative z-10 flex min-h-[390px] flex-1 flex-col px-7 pb-10 pt-8 sm:px-12 md:px-[12%] md:pb-16 md:pt-10">
           <Link
             to="/"
-            className="text-slate-400 text-sm inline-flex items-center gap-1 mb-8"
+            className="inline-flex w-fit items-center gap-3"
+          >
+            <img
+              src={logo}
+              alt="Logo OceanGuard"
+              className="h-10 w-10 object-contain"
+            />
+            <span className="text-2xl font-semibold tracking-tight">
+              OceanGuard
+            </span>
+          </Link>
+
+          <div className="my-auto w-full max-w-[535px] py-14 md:py-10">
+            <h1 className="text-[42px] font-bold leading-[1.12] tracking-tight sm:text-[46px]">
+              Protect Our
+              <br />
+              Ocean,
+              <br />
+              Together.
+            </h1>
+
+            <p className="mt-5 max-w-[520px] text-[15px] leading-relaxed text-white">
+              Bergabung dengan ribuan relawan yang aktif menjaga
+              kebersihan laut Indonesia setiap harinya.
+            </p>
+
+            <div className="mt-9 grid grid-cols-2 gap-4">
+              {STATS.map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-[4px] bg-white/70 px-4 py-4 text-[#073D85] backdrop-blur-[2px]"
+                >
+                  <p className="text-[27px] font-bold leading-none">
+                    {stat.value}
+                  </p>
+                  <p className="mt-1 text-[13px] text-[#152A41]">
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="flex min-h-[520px] items-center justify-center bg-white px-7 py-16 sm:px-12 md:min-h-screen">
+        <div className="w-full max-w-[448px]">
+          <Link
+            to="/"
+            className="mb-8 inline-block text-[13px] font-medium text-[#8F9CB2] hover:text-[#0B3D91]"
           >
             ← Kembali ke Beranda
           </Link>
 
           {children}
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

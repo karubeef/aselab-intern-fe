@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { getReportById, updateReport } from "../../api/reports";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authContext";
 import ReporterLayout from "../../components/ReporterLayout";
 import { POLLUTION_LEVELS } from "../../constants/report";
 
@@ -32,10 +33,14 @@ export default function EditReport() {
   async function loadReport() {
     try {
       setLoading(true);
+      setLoadError("");
+      setNotAllowed(false);
+
       const report = await getReportById(id);
 
       const isOwner = user?.id === report.user?.id;
-      const canEdit = isOwner && report.status === "SUBMITTED";
+      const canEdit =
+        isOwner && report.status === "SUBMITTED";
 
       if (!canEdit) {
         setNotAllowed(true);
@@ -57,7 +62,9 @@ export default function EditReport() {
   }
 
   const isFormValid =
-    latitude !== "" && longitude !== "" && pollutionLevel !== "";
+    latitude !== "" &&
+    longitude !== "" &&
+    pollutionLevel !== "";
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -104,9 +111,11 @@ export default function EditReport() {
     return (
       <ReporterLayout>
         <p className="bg-red-50 text-red-600 text-sm rounded-lg px-4 py-3 mb-4">
-          Kamu tidak bisa mengedit laporan ini — laporan bukan milikmu, atau
-          statusnya sudah bukan "Menunggu Verifikasi" lagi.
+          Kamu tidak bisa mengedit laporan ini — laporan bukan
+          milikmu, atau statusnya sudah bukan
+          "Menunggu Verifikasi" lagi.
         </p>
+
         <Link
           to={`/reports/${id}`}
           className="inline-block border border-[#1179C4] text-[#1179C4] font-semibold px-5 py-2.5 rounded-lg"
@@ -119,25 +128,31 @@ export default function EditReport() {
 
   return (
     <ReporterLayout>
-      <h1 className="text-2xl font-bold mb-1">Edit Laporan Sampah</h1>
+      <h1 className="text-2xl font-bold mb-1">
+        Edit Laporan Sampah
+      </h1>
+
       <p className="text-slate-500 text-sm mb-6">
         Perbarui informasi laporan yang masih menunggu verifikasi
       </p>
 
       <div className="bg-white border border-slate-200 rounded-xl p-6 max-w-2xl">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-5"
+        >
           {error && (
             <p className="bg-red-50 text-red-600 text-sm rounded-lg px-4 py-3">
               {error}
             </p>
           )}
 
-          {/* Jenis sampah — read-only, tidak bisa diubah lewat edit karena BE belum buat untuk wasteType*/}
           {wasteTypesDisplay.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">
                 Jenis Sampah
               </label>
+
               <div className="flex flex-wrap gap-2">
                 {wasteTypesDisplay.map((w) => (
                   <span
@@ -148,6 +163,7 @@ export default function EditReport() {
                   </span>
                 ))}
               </div>
+
               <p className="text-slate-400 text-xs mt-1.5">
                 Jenis sampah tidak bisa diubah lewat form edit.
               </p>
@@ -159,10 +175,13 @@ export default function EditReport() {
               <label className="block text-sm font-medium text-slate-700 mb-1.5">
                 Keterangan Jenis Lainnya
               </label>
+
               <input
                 type="text"
                 value={customWasteType}
-                onChange={(e) => setCustomWasteType(e.target.value)}
+                onChange={(e) =>
+                  setCustomWasteType(e.target.value)
+                }
                 className="w-full border border-slate-300 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#1179C4]"
               />
             </div>
@@ -173,6 +192,7 @@ export default function EditReport() {
               <label className="block text-sm font-medium text-slate-700 mb-1.5">
                 Latitude
               </label>
+
               <input
                 type="number"
                 step="any"
@@ -181,10 +201,12 @@ export default function EditReport() {
                 className="w-full border border-slate-300 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#1179C4]"
               />
             </div>
+
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">
                 Longitude
               </label>
+
               <input
                 type="number"
                 step="any"
@@ -199,10 +221,13 @@ export default function EditReport() {
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
               Nama Lokasi
             </label>
+
             <input
               type="text"
               value={locationName}
-              onChange={(e) => setLocationName(e.target.value)}
+              onChange={(e) =>
+                setLocationName(e.target.value)
+              }
               placeholder="Nama lokasi (opsional)"
               className="w-full border border-slate-300 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#1179C4]"
             />
@@ -212,6 +237,7 @@ export default function EditReport() {
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Tingkat Keparahan
             </label>
+
             <div className="flex flex-col gap-3">
               {POLLUTION_LEVELS.map((opt) => (
                 <label
@@ -223,15 +249,23 @@ export default function EditReport() {
                   }`}
                 >
                   <div>
-                    <p className="font-semibold text-sm">{opt.label}</p>
-                    <p className="text-slate-400 text-xs mt-0.5">{opt.desc}</p>
+                    <p className="font-semibold text-sm">
+                      {opt.label}
+                    </p>
+
+                    <p className="text-slate-400 text-xs mt-0.5">
+                      {opt.desc}
+                    </p>
                   </div>
+
                   <input
                     type="radio"
                     name="pollutionLevel"
                     value={opt.value}
                     checked={pollutionLevel === opt.value}
-                    onChange={(e) => setPollutionLevel(e.target.value)}
+                    onChange={(e) =>
+                      setPollutionLevel(e.target.value)
+                    }
                   />
                 </label>
               ))}
@@ -242,10 +276,13 @@ export default function EditReport() {
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
               Deskripsi
             </label>
+
             <textarea
               rows={4}
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) =>
+                setDescription(e.target.value)
+              }
               className="w-full border border-slate-300 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#1179C4]"
             />
           </div>
@@ -256,8 +293,11 @@ export default function EditReport() {
               disabled={!isFormValid || isSubmitting}
               className="bg-[#1179C4] hover:bg-[#0f6aab] disabled:bg-slate-300 text-white font-semibold px-6 py-3 rounded-lg"
             >
-              {isSubmitting ? "Menyimpan..." : "Simpan Perubahan"}
+              {isSubmitting
+                ? "Menyimpan..."
+                : "Simpan Perubahan"}
             </button>
+
             <Link
               to={`/reports/${id}`}
               className="border border-slate-300 text-slate-600 font-medium px-6 py-3 rounded-lg"

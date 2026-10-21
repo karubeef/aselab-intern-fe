@@ -1,12 +1,22 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { getAllReports } from "../../api/reports";
 import { getLocalResolution } from "../../utils/localResolution";
-import { getCurrentStage, STAGE_LABELS, STAGE_COLORS } from "../../utils/reportStage";
+import {
+  getCurrentStage,
+  STAGE_LABELS,
+  STAGE_COLORS,
+} from "../../utils/reportStage";
 import ReporterLayout from "../../components/ReporterLayout";
 import { POLLUTION_LABELS } from "../../constants/report";
 
-const POLLUTION_DOTS = { LOW: "#22c55e", MODERATE: "#f59e0b", HIGH: "#f97316", CRITICAL: "#ef4444" };
+const POLLUTION_DOTS = {
+  LOW: "#22c55e",
+  MODERATE: "#f59e0b",
+  HIGH: "#f97316",
+  CRITICAL: "#ef4444",
+};
 
 const STATUS_FILTER_OPTIONS = [
   { value: "ALL", label: "Semua status" },
@@ -35,6 +45,7 @@ export default function AdminManageReports() {
   async function loadReports() {
     try {
       setLoading(true);
+
       const data = await getAllReports();
       setReports(data);
     } catch (err) {
@@ -46,25 +57,45 @@ export default function AdminManageReports() {
 
   const enrichedReports = useMemo(() => {
     return reports
-      .map((r) => {
-        const local = getLocalResolution(r.id);
-        return { ...r, stage: getCurrentStage(r, local) };
+      .map((report) => {
+        const local = getLocalResolution(report.id);
+
+        return {
+          ...report,
+          stage: getCurrentStage(report, local),
+        };
       })
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt) - new Date(a.createdAt)
+      );
   }, [reports]);
 
   const filteredReports = useMemo(() => {
     const query = appliedSearch.toLowerCase();
-    return enrichedReports.filter((r) => {
-      const matchesStatus = appliedStatus === "ALL" || r.stage === appliedStatus;
+
+    return enrichedReports.filter((report) => {
+      const matchesStatus =
+        appliedStatus === "ALL" ||
+        report.stage === appliedStatus;
+
       const matchesQuery =
         query === "" ||
-        `og-${r.id}`.includes(query) ||
-        (r.locationName || "").toLowerCase().includes(query) ||
-        (r.user?.name || "").toLowerCase().includes(query);
+        `og-${report.id}`.includes(query) ||
+        (report.locationName || "")
+          .toLowerCase()
+          .includes(query) ||
+        (report.user?.name || "")
+          .toLowerCase()
+          .includes(query);
+
       return matchesStatus && matchesQuery;
     });
-  }, [enrichedReports, appliedSearch, appliedStatus]);
+  }, [
+    enrichedReports,
+    appliedSearch,
+    appliedStatus,
+  ]);
 
   function handleApply() {
     setAppliedSearch(draftSearch);
@@ -73,96 +104,194 @@ export default function AdminManageReports() {
 
   return (
     <ReporterLayout>
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#15316E]">Kelola Laporan</h1>
-          <p className="text-slate-400 text-sm">Tinjau laporan dan pantau penanganannya</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-[#15316E] text-white rounded-full pl-1.5 pr-4 py-1.5">
-            <span className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">R</span>
-          </div>
+          <h1 className="text-2xl font-bold text-[#15316E]">
+            Kelola Laporan
+          </h1>
+
+          <p className="text-sm text-slate-400">
+            Tinjau laporan dan pantau penanganannya
+          </p>
         </div>
       </div>
 
-      <div className="flex items-end gap-4 mb-6 flex-wrap">
-        <div className="flex-1 min-w-[260px]">
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">Cari laporan</label>
+      <div className="mb-6 flex flex-wrap items-end gap-4">
+        <div className="min-w-[260px] flex-1">
+          <label
+            htmlFor="admin-report-search"
+            className="mb-1.5 block text-sm font-medium text-slate-700"
+          >
+            Cari laporan
+          </label>
+
           <input
+            id="admin-report-search"
             type="text"
             placeholder="Cari ID, lokasi, atau reporter..."
             value={draftSearch}
-            onChange={(e) => setDraftSearch(e.target.value)}
-            className="w-full border border-slate-300 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#1179C4]"
+            onChange={(event) =>
+              setDraftSearch(event.target.value)
+            }
+            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-[#1179C4]"
           />
         </div>
+
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">Status</label>
-          <select
-            value={draftStatus}
-            onChange={(e) => setDraftStatus(e.target.value)}
-            className="border border-slate-300 rounded-lg px-4 py-3 text-sm outline-none w-48"
+          <label
+            htmlFor="admin-report-status"
+            className="mb-1.5 block text-sm font-medium text-slate-700"
           >
-            {STATUS_FILTER_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
+            Status
+          </label>
+
+          <select
+            id="admin-report-status"
+            value={draftStatus}
+            onChange={(event) =>
+              setDraftStatus(event.target.value)
+            }
+            className="w-48 rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none"
+          >
+            {STATUS_FILTER_OPTIONS.map((option) => (
+              <option
+                key={option.value}
+                value={option.value}
+              >
+                {option.label}
+              </option>
             ))}
           </select>
         </div>
+
         <button
+          type="button"
           onClick={handleApply}
-          className="bg-[#15316E] hover:bg-[#0F2555] text-white font-semibold px-6 py-3 rounded-lg text-sm"
+          className="rounded-lg bg-[#15316E] px-6 py-3 text-sm font-semibold text-white hover:bg-[#0F2555]"
         >
           Terapkan
         </button>
       </div>
 
-      {error && <p className="bg-red-50 text-red-600 text-sm rounded-lg px-4 py-3 mb-4">{error}</p>}
+      {error && (
+        <p
+          role="alert"
+          className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600"
+        >
+          {error}
+        </p>
+      )}
 
       {loading ? (
-        <p className="text-slate-500">Memuat data...</p>
+        <p className="text-slate-500">
+          Memuat data...
+        </p>
       ) : (
         <>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="font-semibold">{filteredReports.length} laporan</span>
-            <span className="text-slate-400 text-sm">Terbaru terlebih dahulu</span>
+          <div className="mb-3 flex items-center gap-2">
+            <span className="font-semibold">
+              {filteredReports.length} laporan
+            </span>
+
+            <span className="text-sm text-slate-400">
+              Terbaru terlebih dahulu
+            </span>
           </div>
 
-          <div className="border border-slate-200 rounded-xl overflow-hidden">
+          <div className="overflow-hidden rounded-xl border border-slate-200">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 text-left text-slate-500">
-                  <th className="px-5 py-3 font-medium">Laporan & Lokasi</th>
-                  <th className="px-5 py-3 font-medium">Reporter</th>
-                  <th className="px-5 py-3 font-medium">Keparahan</th>
-                  <th className="px-5 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium">Tanggal</th>
-                  <th className="px-5 py-3 font-medium">Aksi</th>
+                  <th className="px-5 py-3 font-medium">
+                    Laporan & Lokasi
+                  </th>
+
+                  <th className="px-5 py-3 font-medium">
+                    Reporter
+                  </th>
+
+                  <th className="px-5 py-3 font-medium">
+                    Keparahan
+                  </th>
+
+                  <th className="px-5 py-3 font-medium">
+                    Status
+                  </th>
+
+                  <th className="px-5 py-3 font-medium">
+                    Tanggal
+                  </th>
+
+                  <th className="px-5 py-3 font-medium">
+                    Aksi
+                  </th>
                 </tr>
               </thead>
+
               <tbody className="divide-y divide-slate-100">
-                {filteredReports.map((r) => (
-                  <tr key={r.id}>
+                {filteredReports.map((report) => (
+                  <tr key={report.id}>
                     <td className="px-5 py-4">
-                      <p className="text-slate-400 text-xs">OG-{r.id}</p>
-                      <p className="font-semibold">{r.locationName || `${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)}`}</p>
+                      <p className="text-xs text-slate-400">
+                        OG-{report.id}
+                      </p>
+
+                      <p className="font-semibold">
+                        {report.locationName ||
+                          `${report.latitude.toFixed(4)}, ${report.longitude.toFixed(4)}`}
+                      </p>
                     </td>
-                    <td className="px-5 py-4">{r.user?.name || "Tidak diketahui"}</td>
+
                     <td className="px-5 py-4">
-                      <span className="inline-flex items-center gap-1.5 border border-slate-200 rounded-full px-3 py-1 text-xs">
-                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: POLLUTION_DOTS[r.pollutionLevel] }} />
-                        {POLLUTION_LABELS[r.pollutionLevel]}
+                      {report.user?.name ||
+                        "Tidak diketahui"}
+                    </td>
+
+                    <td className="px-5 py-4">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1 text-xs">
+                        <span
+                          className="h-2 w-2 rounded-full"
+                          style={{
+                            backgroundColor:
+                              POLLUTION_DOTS[
+                                report.pollutionLevel
+                              ],
+                          }}
+                        />
+
+                        {
+                          POLLUTION_LABELS[
+                            report.pollutionLevel
+                          ]
+                        }
                       </span>
                     </td>
+
                     <td className="px-5 py-4">
-                      <span className={`text-xs font-medium px-3 py-1.5 rounded-full ${STAGE_COLORS[r.stage]}`}>
-                        {STAGE_LABELS[r.stage]}
+                      <span
+                        className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                          STAGE_COLORS[report.stage]
+                        }`}
+                      >
+                        {STAGE_LABELS[report.stage]}
                       </span>
                     </td>
+
                     <td className="px-5 py-4 text-slate-500">
-                      {new Date(r.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                      {new Date(
+                        report.createdAt
+                      ).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
                     </td>
+
                     <td className="px-5 py-4">
-                      <Link to={`/admin/manage-reports/${r.id}`} className="text-[#1179C4] font-medium">
+                      <Link
+                        to={`/admin/manage-reports/${report.id}`}
+                        className="font-medium text-[#1179C4]"
+                      >
                         Detail →
                       </Link>
                     </td>

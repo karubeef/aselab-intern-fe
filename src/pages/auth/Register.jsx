@@ -1,7 +1,14 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../../api/auth";
 import AuthLayout from "./AuthLayout";
+
+const fieldClass =
+  "h-[49px] w-full rounded-[9px] border border-[#CDD5E0] bg-white px-4 text-[14px] text-[#172033] outline-none placeholder:text-[#8291AA] focus:border-[#0B3D91] focus:ring-2 focus:ring-blue-100";
+
+const labelClass =
+  "mb-2 block text-[13px] font-medium text-[#364152]";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -16,30 +23,41 @@ export default function Register() {
 
   const hasMinLength = password.length >= 8;
   const hasLetter = /[a-zA-Z]/.test(password);
-  const hasNumberAndSymbol =
-    /[0-9]/.test(password) &&
-    /[!@#$%^&*(),.?":{}|<>_\-+=[\]/\\~`]/.test(password);
-  const isPasswordValid = hasMinLength && hasLetter && hasNumberAndSymbol;
-  const passwordsMatch =
-    confirmPassword !== "" && password === confirmPassword;
+  const hasNumber = /[0-9]/.test(password);
+  const hasSymbol = /[^a-zA-Z0-9]/.test(password);
 
-  const isFormValid =
+  const isPasswordValid =
+    hasMinLength && hasLetter && hasNumber && hasSymbol;
+
+  const passwordsMatch =
+    confirmPassword.length > 0 &&
+    password === confirmPassword;
+
+  const canSubmit =
     name.trim() !== "" &&
     email.trim() !== "" &&
     isPasswordValid &&
     passwordsMatch &&
-    agreed;
+    agreed &&
+    !isSubmitting;
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  async function handleSubmit(event) {
+    event.preventDefault();
+    if (!canSubmit) return;
+
     setError("");
     setIsSubmitting(true);
 
     try {
-      await registerUser({ name, email, password });
-      navigate("/login");
+      await registerUser({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+      });
+
+      navigate("/login", { replace: true });
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Pendaftaran gagal.");
     } finally {
       setIsSubmitting(false);
     }
@@ -47,131 +65,148 @@ export default function Register() {
 
   return (
     <AuthLayout>
-      <h2 className="text-2xl font-bold text-slate-900 mb-1">
+      <h2 className="text-[23px] font-bold tracking-tight text-[#171B30]">
         Buat akun baru
       </h2>
-      <p className="text-slate-500 text-sm mb-6">
+      <p className="mt-2 text-[13px] text-[#919CB1]">
         Daftar dan mulai berkontribusi
       </p>
 
-      {/* Tab switcher */}
-      <div className="flex bg-slate-200/70 rounded-lg p-1 mb-6">
-        <Link
-          to="/login"
-          className="flex-1 text-center py-2.5 rounded-md text-slate-500 font-semibold text-sm"
-        >
-          Masuk
-        </Link>
-        <span className="flex-1 text-center py-2.5 rounded-md bg-white text-[#1179C4] font-semibold text-sm shadow-sm">
-          Daftar
-        </span>
-      </div>
-
       {error && (
-        <p className="bg-red-50 text-red-600 text-sm rounded-lg px-4 py-3 mb-4">
+        <div
+          role="alert"
+          className="mt-5 rounded-[8px] border border-red-300 bg-red-50 px-4 py-3 text-[13px] text-red-700"
+        >
           {error}
-        </p>
+        </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">
+          <label htmlFor="register-name" className={labelClass}>
             Nama Lengkap
           </label>
           <input
+            id="register-name"
             type="text"
-            placeholder="your name"
+            autoComplete="name"
+            placeholder="Masukkan Nama Lengkap Anda"
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full border border-slate-300 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#1179C4]"
+            onChange={(event) => {
+              setName(event.target.value);
+              setError("");
+            }}
+            required
+            className={fieldClass}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">
+          <label htmlFor="register-email" className={labelClass}>
             Email
           </label>
           <input
+            id="register-email"
             type="email"
-            placeholder="youremail@email.com"
+            autoComplete="email"
+            placeholder="Masukkan Email Anda"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-slate-300 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#1179C4]"
+            onChange={(event) => {
+              setEmail(event.target.value);
+              setError("");
+            }}
+            required
+            className={fieldClass}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">
+          <label htmlFor="register-password" className={labelClass}>
             Password
           </label>
           <input
+            id="register-password"
             type="password"
-            placeholder="••••••••"
+            autoComplete="new-password"
+            placeholder="Masukkan Password Anda"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-slate-300 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#1179C4]"
+            onChange={(event) => {
+              setPassword(event.target.value);
+              setError("");
+            }}
+            required
+            minLength={8}
+            className={fieldClass}
           />
-          {password.length > 0 && (
-            <ul className="mt-2 flex flex-col gap-1 text-xs">
-              <li className={hasMinLength ? "text-green-600" : "text-slate-400"}>
-                {hasMinLength ? "✓" : "✕"} Minimal 8 karakter
-              </li>
-              <li className={hasLetter ? "text-green-600" : "text-slate-400"}>
-                {hasLetter ? "✓" : "✕"} Mengandung huruf
-              </li>
-              <li className={hasNumberAndSymbol ? "text-green-600" : "text-slate-400"}>
-                {hasNumberAndSymbol ? "✓" : "✕"} Mengandung angka & simbol
-              </li>
-            </ul>
+
+          {password.length > 0 && !isPasswordValid && (
+            <p className="mt-1.5 text-[11px] text-[#8B94A5]">
+              Minimal 8 karakter, terdiri dari huruf, angka, dan simbol.
+            </p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">
+          <label htmlFor="register-confirm" className={labelClass}>
             Konfirmasi Password
           </label>
           <input
+            id="register-confirm"
             type="password"
-            placeholder="••••••••"
+            autoComplete="new-password"
+            placeholder="Masukkan Ulang Password Anda"
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full border border-slate-300 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#1179C4]"
+            onChange={(event) => {
+              setConfirmPassword(event.target.value);
+              setError("");
+            }}
+            required
+            className={`${fieldClass} ${
+              confirmPassword && !passwordsMatch
+                ? "!border-red-400"
+                : ""
+            }`}
           />
-          {confirmPassword.length > 0 && !passwordsMatch && (
-            <p className="text-red-500 text-xs mt-1.5">Password tidak sama</p>
+          {confirmPassword && !passwordsMatch && (
+            <p className="mt-1.5 text-[11px] text-red-500">
+              Konfirmasi password tidak cocok.
+            </p>
           )}
         </div>
 
-        <label className="flex items-start gap-2 text-sm text-slate-600">
+        <label className="flex cursor-pointer items-start gap-3 pt-2 text-[13px] leading-relaxed text-[#99A5B9]">
           <input
             type="checkbox"
             checked={agreed}
-            onChange={(e) => setAgreed(e.target.checked)}
-            className="mt-0.5"
+            onChange={(event) => setAgreed(event.target.checked)}
+            className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[#0B3D91]"
           />
           <span>
             Saya setuju dengan{" "}
-            <a href="#syarat" className="text-[#1179C4] underline">
+            <span className="font-medium text-[#0B3D91] underline">
               Syarat & Ketentuan
-            </a>{" "}
+            </span>{" "}
             dan{" "}
-            <a href="#privasi" className="text-[#1179C4] underline">
+            <span className="font-medium text-[#0B3D91] underline">
               Kebijakan Privasi
-            </a>
+            </span>
           </span>
         </label>
 
         <button
           type="submit"
-          disabled={!isFormValid || isSubmitting}
-          className="bg-[#1179C4] hover:bg-[#0f6aab] disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-lg mt-2"
+          disabled={!canSubmit}
+          className="h-[49px] w-full rounded-[8px] bg-[#0B3D91] text-[14px] font-semibold text-white transition hover:bg-[#082C70] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? "Mendaftarkan..." : "Daftar"}
         </button>
 
-        <p className="text-center text-sm text-slate-500">
+        <p className="text-center text-[13px] text-[#9AA6BA]">
           Sudah punya akun?{" "}
-          <Link to="/login" className="text-[#1179C4] font-medium">
+          <Link
+            to="/login"
+            className="font-medium text-[#0B3D91] hover:underline"
+          >
             Masuk
           </Link>
         </p>

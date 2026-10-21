@@ -1,10 +1,13 @@
 
 import { apiRequest } from "./client";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = (
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:3000/api"
+).replace(/\/+$/, "");
 
 export async function registerUser({ name, email, password }) {
-  const res = await fetch(`${API_URL}/auth/register`, {
+  const response = await fetch(`${API_URL}/auth/register`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -12,9 +15,9 @@ export async function registerUser({ name, email, password }) {
     body: JSON.stringify({ name, email, password }),
   });
 
-  const data = await res.json();
+  const data = await response.json();
 
-  if (!res.ok) {
+  if (!response.ok) {
     throw new Error(data.message || "Registrasi gagal");
   }
 
@@ -22,7 +25,7 @@ export async function registerUser({ name, email, password }) {
 }
 
 export async function loginUser({ email, password }) {
-  const res = await fetch(`${API_URL}/auth/login`, {
+  const response = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -30,9 +33,9 @@ export async function loginUser({ email, password }) {
     body: JSON.stringify({ email, password }),
   });
 
-  const data = await res.json();
+  const data = await response.json();
 
-  if (!res.ok) {
+  if (!response.ok) {
     throw new Error(data.message || "Login gagal");
   }
 
@@ -42,7 +45,9 @@ export async function loginUser({ email, password }) {
 export function forgotPassword(email) {
   return apiRequest("/auth/forgot-password", {
     method: "POST",
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({
+      email: email.trim(),
+    }),
     skipAuthRedirect: true,
   });
 }
@@ -50,7 +55,10 @@ export function forgotPassword(email) {
 export function resetPassword(token, newPassword) {
   return apiRequest("/auth/reset-password", {
     method: "POST",
-    body: JSON.stringify({ token, newPassword }),
+    body: JSON.stringify({
+      token,
+      newPassword,
+    }),
     skipAuthRedirect: true,
   });
 }

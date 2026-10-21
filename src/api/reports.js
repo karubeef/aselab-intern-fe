@@ -1,3 +1,4 @@
+
 import { apiRequest } from "./client";
 
 export function createReport(reportData) {
@@ -14,8 +15,17 @@ export function getAllReports(status) {
   );
 }
 
+export function getPublicReports(status) {
+  const query = status ? `?status=${status}` : "";
+  return apiRequest(`/reports/public${query}`).then(
+    (data) => data.reports
+  );
+}
+
 export function getReportById(id) {
-  return apiRequest(`/reports/${id}`).then((data) => data.report);
+  return apiRequest(`/reports/${id}`).then(
+    (data) => data.report
+  );
 }
 
 export function updateReport(id, reportData) {
@@ -26,7 +36,9 @@ export function updateReport(id, reportData) {
 }
 
 export function deleteReport(id) {
-  return apiRequest(`/reports/${id}`, { method: "DELETE" });
+  return apiRequest(`/reports/${id}`, {
+    method: "DELETE",
+  });
 }
 
 export function verifyReport(id, status, rejectReason) {
@@ -37,7 +49,9 @@ export function verifyReport(id, status, rejectReason) {
 }
 
 export function getHeatmap() {
-  return apiRequest("/reports/map").then((data) => data.areas);
+  return apiRequest("/reports/map").then(
+    (data) => data.areas
+  );
 }
 
 export function getHeatmapAreaDetail(areaId) {
@@ -53,5 +67,7 @@ export function updateReportStatus(id, status) {
 
 export function getMyReports(status) {
   const query = status ? `?status=${status}` : "";
-  return apiRequest(`/reports/me${query}`).then((data) => data.reports);
+  return apiRequest(`/reports/me${query}`).then(
+    (data) => data.reports
+  );
 }

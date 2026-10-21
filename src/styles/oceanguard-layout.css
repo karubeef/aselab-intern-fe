@@ -1,9 +1,4 @@
 
-/* ==========================================
-   OCEANGUARD - GLOBAL LAYOUT THEME
-   Digunakan bersama oleh sidebar Admin & User
-========================================== */
-
 :root {
   --og-blue-primary: #0b3d91;
   --og-blue-dark: #10254a;
@@ -20,9 +15,14 @@
   --og-sidebar-indicator: #263c69;
 }
 
-/* Background sama untuk semua halaman */
 .og-app-shell {
-  min-height: 100vh;
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+
   background: linear-gradient(
     180deg,
     var(--og-sidebar-top) 0%,
@@ -31,58 +31,99 @@
   );
 }
 
-/* Sidebar menggunakan gradient yang konsisten */
 .og-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+
   background: linear-gradient(
     180deg,
     var(--og-sidebar-top) 0%,
     var(--og-sidebar-middle) 48%,
     var(--og-sidebar-bottom) 100%
   );
+
   color: var(--og-sidebar-text);
 }
 
-/* Item navigasi */
+.og-sidebar-inner {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.og-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+
+  flex: 1 1 auto;
+  min-height: 0;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  margin-left: -16px;
+  padding-left: 16px;
+  padding-bottom: 12px;
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.og-sidebar-nav::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 .og-sidebar-item {
   position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
+
   width: 100%;
   min-height: 46px;
   padding: 10px 16px;
+
   border-radius: 12px;
+
   color: var(--og-sidebar-text);
   font-weight: 500;
   text-decoration: none;
-  transition: background-color 0.2s ease, color 0.2s ease;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .og-sidebar-item:hover {
   background: var(--og-sidebar-hover);
-  color: white;
+  color: #ffffff;
 }
 
-/* Menu aktif */
 .og-sidebar-item-active {
   background: var(--og-sidebar-active);
   color: var(--og-sidebar-text-active);
 }
 
-/* Indikator menu aktif */
 .og-sidebar-item-active::before {
   content: "";
   position: absolute;
+
   top: 50%;
   left: -16px;
   transform: translateY(-50%);
+
   width: 6px;
   height: 40px;
+
   border-radius: 999px;
   background: var(--og-sidebar-indicator);
 }
 
-/* Ukuran ikon Figma */
 .og-sidebar-icon {
   width: 24px;
   height: 24px;
@@ -90,19 +131,25 @@
   flex-shrink: 0;
 }
 
-/* Logout */
 .og-sidebar-logout {
   display: flex;
   align-items: center;
   gap: 12px;
+
   width: 100%;
   padding: 12px 16px;
+
+  margin-top: auto;
+
   border: 0;
   border-radius: 10px;
+
   background: transparent;
-  color: white;
+  color: #ffffff;
+
   text-align: left;
   cursor: pointer;
+
   transition: background-color 0.2s ease;
 }
 
@@ -110,26 +157,68 @@
   background: var(--og-sidebar-hover);
 }
 
-/* Konten putih */
-.og-main-panel {
+.og-main-area {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+
+  height: 100%;
   min-width: 0;
-  min-height: calc(100vh - 32px);
+  min-height: 0;
+
+  overflow: hidden;
+}
+
+.og-main-panel {
+  position: relative;
+  flex: 1 1 auto;
+
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+
   background: #ffffff;
   border-radius: 24px;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
   box-shadow: 0 8px 28px rgba(10, 31, 67, 0.08);
 }
 
-/* Mengurangi animasi jika diminta pengguna */
-@media (prefers-reduced-motion: reduce) {
-  .og-sidebar-item,
-  .og-sidebar-logout {
-    transition: none;
+.og-main-panel::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+@media (max-width: 1023px) {
+  .og-app-shell {
+    background: linear-gradient(
+      180deg,
+      var(--og-sidebar-top) 0%,
+      var(--og-sidebar-middle) 48%,
+      var(--og-sidebar-bottom) 100%
+    );
   }
 }
 
 @media (max-width: 639px) {
   .og-main-panel {
-    min-height: calc(100vh - 16px);
     border-radius: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .og-sidebar-item,
+  .og-sidebar-logout {
+    transition: none;
   }
 }

@@ -14,7 +14,7 @@ import "leaflet/dist/leaflet.css";
 
 import ReporterLayout from "../components/ReporterLayout";
 import {
-  getAllReports,
+  getPublicReports,
   getHeatmap,
 } from "../api/reports";
 
@@ -98,8 +98,8 @@ function distanceMeters(a, b) {
   const h =
     Math.sin(dLat / 2) ** 2 +
     Math.cos(rad(a[0])) *
-    Math.cos(rad(b[0])) *
-    Math.sin(dLng / 2) ** 2;
+      Math.cos(rad(b[0])) *
+      Math.sin(dLng / 2) ** 2;
 
   return (
     2 *
@@ -137,14 +137,16 @@ function formatDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
 
-  return date.toLocaleString("id-ID", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Asia/Jakarta",
-  }) + " WIB";
+  return (
+    date.toLocaleString("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Asia/Jakarta",
+    }) + " WIB"
+  );
 }
 
 function reportPhoto(report) {
@@ -154,10 +156,12 @@ function reportPhoto(report) {
     return first;
   }
 
-  return first?.url ||
+  return (
+    first?.url ||
     first?.photoUrl ||
     first?.imageUrl ||
-    null;
+    null
+  );
 }
 
 function MapMover({ target }) {
@@ -221,7 +225,7 @@ function DensityCircles({ area, onClick }) {
         pathOptions={{
           stroke: false,
           fillColor: "#eab308",
-          fillOpacity: 0.30,
+          fillOpacity: 0.3,
         }}
         eventHandlers={{ click: onClick }}
       />
@@ -464,7 +468,8 @@ function RightPanel({
   if (mode === "filter") {
     const newest = [...areaReports].sort(
       (a, b) =>
-        new Date(b.createdAt) - new Date(a.createdAt)
+        new Date(b.createdAt) -
+        new Date(a.createdAt)
     )[0];
 
     return (
@@ -494,6 +499,7 @@ function RightPanel({
             >
               OG-{newest.id} ·{" "}
               {wasteNames(newest).join(", ") || "Lainnya"}
+
               <p className="mt-2 text-xs text-slate-500">
                 {formatDate(newest.createdAt)}
               </p>
@@ -696,7 +702,8 @@ function AreaReportList({
 }) {
   const sorted = [...reports].sort(
     (a, b) =>
-      new Date(b.createdAt) - new Date(a.createdAt)
+      new Date(b.createdAt) -
+      new Date(a.createdAt)
   );
 
   return (
@@ -886,7 +893,7 @@ export default function UserMapPage() {
     async function load() {
       try {
         const [reportData, areaData] = await Promise.all([
-          getAllReports("VERIFIED"),
+          getPublicReports("VERIFIED"),
           getHeatmap(),
         ]);
 
@@ -1181,7 +1188,6 @@ export default function UserMapPage() {
       ) : (
         <div className="rounded-xl border-2 border-slate-200 bg-white p-4">
           <div className="relative h-[740px] overflow-hidden rounded-lg bg-slate-100">
-            {/* PETA UTAMA */}
             <MapContainer
               center={DEFAULT_CENTER}
               zoom={14}
@@ -1280,7 +1286,6 @@ export default function UserMapPage() {
               )}
             </MapContainer>
 
-            {/* PANEL FILTER KIRI */}
             <div className="absolute left-3 top-3 z-[500] max-h-[calc(100%-24px)] w-[285px] overflow-y-auto sm:left-4 sm:w-[310px]">
               <FilterPanel
                 search={search}
@@ -1295,7 +1300,6 @@ export default function UserMapPage() {
               />
             </div>
 
-            {/* TOMBOL LOKASI */}
             <button
               type="button"
               onClick={locateMe}
@@ -1304,7 +1308,6 @@ export default function UserMapPage() {
               Lokasi saya
             </button>
 
-            {/* PANEL KANAN */}
             <div className="absolute right-3 top-3 z-[500] max-h-[calc(100%-24px)] w-[270px] overflow-y-auto lg:right-4 lg:w-[315px]">
               <RightPanel
                 mode={
@@ -1333,7 +1336,6 @@ export default function UserMapPage() {
               />
             </div>
 
-            {/* INFORMASI AREA BAWAH */}
             {selectedArea && (
               <div className="absolute bottom-4 left-1/2 z-[500] -translate-x-1/2 rounded-lg bg-white px-5 py-3 text-xs text-slate-600 shadow">
                 Area {selectedArea.areaId ?? "-"} ·{" "}

@@ -1,10 +1,6 @@
 
 import { useState } from "react";
-import {
-  Link,
-  useLocation,
-  useNavigate,
-} from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/authContext";
 import HeaderActions from "./HeaderActions";
@@ -12,14 +8,7 @@ import LogoutConfirmModal from "./LogoutConfirmModal";
 
 import "../styles/oceanguard-layout.css";
 
-// ======================================
-// LOGO OCEANGUARD
-// ======================================
 import oceanGuardLogo from "../assets/oceanguard-logo.png";
-
-// ======================================
-// IKON BERSAMA ADMIN DAN USER
-// ======================================
 import dashboardIcon from "../assets/icons/icon-dashboard.png";
 import laporSampahIcon from "../assets/icons/icon-lapor-sampah.png";
 import laporanSayaIcon from "../assets/icons/icon-laporan-saya.png";
@@ -27,73 +16,31 @@ import exploreMapIcon from "../assets/icons/icon-explore-map.png";
 import challengesIcon from "../assets/icons/icon-challenges.png";
 import profileIcon from "../assets/icons/icon-profile.png";
 import logoutIcon from "../assets/icons/icon-logout.png";
-
-// ======================================
-// IKON EKSKLUSIF ADMIN
-// ======================================
 import adminChallengeIcon from "../assets/icons/admin/icon-admin-challenge.png";
 import adminArticleIcon from "../assets/icons/admin/icon-admin-article.png";
 
-// ======================================
-// NAVIGASI USER
-// ======================================
 const USER_NAV_ITEMS = [
-  {
-    to: "/dashboard",
-    label: "Dashboard",
-    icon: dashboardIcon,
-  },
-  {
-    to: "/reports/new",
-    label: "Lapor Sampah",
-    icon: laporSampahIcon,
-  },
-  {
-    to: "/my-reports",
-    label: "Laporan Saya",
-    icon: laporanSayaIcon,
-  },
-  {
-    to: "/map",
-    label: "Explore Map",
-    icon: exploreMapIcon,
-  },
-  {
-    to: "/challenges",
-    label: "Challenges",
-    icon: challengesIcon,
-  },
+  { to: "/dashboard", label: "Dashboard", icon: dashboardIcon },
+  { to: "/reports/new", label: "Lapor Sampah", icon: laporSampahIcon },
+  { to: "/my-reports", label: "Laporan Saya", icon: laporanSayaIcon },
+  { to: "/map", label: "Explore Map", icon: exploreMapIcon },
+  { to: "/challenges", label: "Challenges", icon: challengesIcon },
   {
     to: "/profile",
     label: "Profil",
     icon: profileIcon,
-    relatedPaths: [
-      "/profile/edit",
-      "/profile/password",
-    ],
+    relatedPaths: ["/profile/edit", "/profile/password"],
   },
 ];
 
-// ======================================
-// NAVIGASI ADMIN
-// IKON UMUM SAMA DENGAN USER
-// ======================================
 const ADMIN_NAV_ITEMS = [
-  {
-    to: "/admin/dashboard",
-    label: "Dashboard",
-    icon: dashboardIcon,
-  },
+  { to: "/admin/dashboard", label: "Dashboard", icon: dashboardIcon },
   {
     to: "/admin/manage-reports",
     label: "Kelola Laporan",
     icon: laporanSayaIcon,
   },
-  {
-    to: "/map",
-    label: "Explore Map",
-    icon: exploreMapIcon,
-  },
+  { to: "/map", label: "Explore Map", icon: exploreMapIcon },
   {
     to: "/admin/challenges",
     label: "Kelola Challenge",
@@ -115,9 +62,6 @@ const ADMIN_NAV_ITEMS = [
   },
 ];
 
-// ======================================
-// KOMPONEN IKON SIDEBAR
-// ======================================
 function SidebarIcon({ src, size = "h-6 w-6" }) {
   return (
     <img
@@ -129,9 +73,6 @@ function SidebarIcon({ src, size = "h-6 w-6" }) {
   );
 }
 
-// ======================================
-// ITEM NAVIGASI DESKTOP
-// ======================================
 function SidebarNavItem({ item, active }) {
   return (
     <Link
@@ -152,9 +93,6 @@ function SidebarNavItem({ item, active }) {
   );
 }
 
-// ======================================
-// NAVIGASI MOBILE
-// ======================================
 function MobileNavigation({
   navItems,
   isActiveRoute,
@@ -174,16 +112,11 @@ function MobileNavigation({
               key={item.to}
               to={item.to}
               aria-current={active ? "page" : undefined}
-              className={`
-                flex shrink-0 items-center gap-2
-                rounded-lg px-3 py-2 text-xs font-medium
-                transition-colors
-                ${
-                  active
-                    ? "bg-[#0B3D91] text-white"
-                    : "bg-slate-100 text-slate-600"
-                }
-              `}
+              className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
+                active
+                  ? "bg-[#0B3D91] text-white"
+                  : "bg-slate-100 text-slate-600"
+              }`}
             >
               <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#416ba6]">
                 <SidebarIcon
@@ -216,28 +149,23 @@ function MobileNavigation({
   );
 }
 
-// ======================================
-// REPORTER LAYOUT
-// DIGUNAKAN ADMIN DAN USER
-// ======================================
 export default function ReporterLayout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
-
   const { user, logout } = useAuth();
 
   const [showLogoutModal, setShowLogoutModal] =
     useState(false);
 
   const isAdmin = user?.role === "ADMIN";
-
   const navItems = isAdmin
     ? ADMIN_NAV_ITEMS
     : USER_NAV_ITEMS;
 
-  // ====================================
-  // STATUS NAVIGASI AKTIF
-  // ====================================
+  const homePath = isAdmin
+    ? "/admin/dashboard"
+    : "/dashboard";
+
   function isActiveRoute(item) {
     const currentPath = location.pathname;
 
@@ -245,7 +173,6 @@ export default function ReporterLayout({ children }) {
       return true;
     }
 
-    // Route turunan, termasuk edit profil
     if (
       item.relatedPaths?.some(
         (path) =>
@@ -259,9 +186,6 @@ export default function ReporterLayout({ children }) {
     return currentPath.startsWith(`${item.to}/`);
   }
 
-  // ====================================
-  // MODAL KONFIRMASI LOGOUT
-  // ====================================
   function openLogoutModal() {
     setShowLogoutModal(true);
   }
@@ -276,32 +200,13 @@ export default function ReporterLayout({ children }) {
     navigate("/login", { replace: true });
   }
 
-  // ====================================
-  // TAMPILAN UTAMA
-  // ====================================
   return (
-    <div className="og-app-shell flex min-h-screen font-sans">
-
-      {/* =================================
-          SIDEBAR DESKTOP
-      ================================= */}
-      <aside
-        className="
-          og-sidebar
-          hidden w-64 shrink-0 flex-col
-          justify-between px-5 py-8
-          lg:flex xl:w-72 xl:px-6
-        "
-      >
-        <div>
-          {/* LOGO OCEANGUARD */}
+    <div className="og-app-shell flex font-sans">
+      <aside className="og-sidebar hidden w-64 shrink-0 flex-col px-5 py-8 lg:flex xl:w-72 xl:px-6">
+        <div className="og-sidebar-inner">
           <Link
-            to={
-              isAdmin
-                ? "/admin/dashboard"
-                : "/dashboard"
-            }
-            className="mb-12 flex items-center gap-3"
+            to={homePath}
+            className="mb-12 flex shrink-0 items-center gap-3"
           >
             <img
               src={oceanGuardLogo}
@@ -320,14 +225,13 @@ export default function ReporterLayout({ children }) {
             </div>
           </Link>
 
-          {/* DAFTAR MENU */}
           <nav
             aria-label={
               isAdmin
                 ? "Navigasi Admin"
                 : "Navigasi User"
             }
-            className="flex flex-col gap-2"
+            className="og-sidebar-nav flex flex-col gap-2"
           >
             {navItems.map((item) => (
               <SidebarNavItem
@@ -339,42 +243,25 @@ export default function ReporterLayout({ children }) {
           </nav>
         </div>
 
-        {/* =================================
-            LOGOUT
-            IKON SAMA ADMIN DAN USER
-        ================================= */}
         <button
           type="button"
           onClick={openLogoutModal}
-          className="og-sidebar-logout text-sm font-medium"
+          className="og-sidebar-logout shrink-0 text-sm font-medium"
         >
           <SidebarIcon src={logoutIcon} />
-
           <span>Keluar dari akun</span>
         </button>
       </aside>
 
-      {/* =================================
-          KONTEN HALAMAN
-      ================================= */}
-      <main className="min-w-0 flex-1 p-2 sm:p-4">
+      <main className="og-main-area min-w-0 flex-1 p-2 sm:p-4">
         <div className="og-main-panel relative px-5 pb-8 pt-12 md:px-8">
-
-          {/* HEADER ACTIONS */}
           <div className="absolute right-5 top-7 z-30 md:right-8">
             <HeaderActions />
           </div>
 
-          {/* =================================
-              MOBILE HEADER
-          ================================= */}
           <div className="mb-6 lg:hidden">
             <Link
-              to={
-                isAdmin
-                  ? "/admin/dashboard"
-                  : "/dashboard"
-              }
+              to={homePath}
               className="mb-4 flex items-center gap-2"
             >
               <img
@@ -395,16 +282,12 @@ export default function ReporterLayout({ children }) {
             />
           </div>
 
-          {/* KONTEN DINAMIS */}
           <div className="min-w-0">
             {children}
           </div>
         </div>
       </main>
 
-      {/* =================================
-          KONFIRMASI LOGOUT
-      ================================= */}
       {showLogoutModal && (
         <LogoutConfirmModal
           onCancel={closeLogoutModal}
