@@ -1,138 +1,390 @@
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   CircleMarker,
   MapContainer,
   Popup,
   TileLayer,
+  ZoomControl,
   useMap,
 } from "react-leaflet";
-
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-import PublicNavbar from "../components/public/PublicNavbar";
+import logo from "../assets/oceanguard-logo.png";
 import {
   getHeatmap,
   getHeatmapAreaDetail,
 } from "../api/reports";
 
-const BLUE = "#0B3D91";
+const DEFAULT_CENTER = [-2.5, 118];
 
-function getColor(total) {
-  if (total >= 6) return "#DC2626";
-  if (total >= 3) return "#F97316";
-  return "#15803D";
+const WASTE_TYPES = [
+  "Plastik",
+  "Kaca",
+  "Logam",
+  "Jaring / Alat Tangkap",
+  "Organik",
+  "Berbahaya (B3)",
+];
+
+const LEVELS = [
+  { label: "Rendah", values: ["LOW"] },
+  { label: "Sedang", values: ["MODERATE", "MEDIUM"] },
+  { label: "Tinggi", values: ["HIGH", "CRITICAL"] },
+];
+
+const DATE_OPTIONS = [
+  { value: 30, label: "30 Hari Terakhir" },
+  { value: 7, label: "7 Hari Terakhir" },
+  { value: 90, label: "90 Hari Terakhir" },
+  { value: 0, label: "Semua Waktu" },
+];
+
+function getPosition(area) {
+  if (
+    area?.centerLat == null ||
+    area?.centerLon == null
+  ) {
+    return null;
+  }
+
+  const lat = Number(area.centerLat);
+  const lng = Number(area.centerLon);
+
+  return Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    Math.abs(lat) <= 90 &&
+    Math.abs(lng) <= 180
+    ? [lat, lng]
+    : null;
 }
 
-function MapFocus({ position }) {
+function getReportWasteTypes(report) {
+  const result = Array.isArray(report?.wasteTypes)
+    ? report.wasteTypes.map((item) =>
+        typeof item === "string" ? item : item?.name
+      )
+    : [];
+
+  if (report?.customWasteType) {
+    result.push(report.customWasteType);
+  }
+
+  return result.filter(Boolean);
+}
+
+function severityColor(level) {
+  const value = String(level || "").toUpperCase();
+
+  if (value === "HIGH" || value === "CRITICAL") {
+    return "#E52529";
+  }
+
+  if (value === "MODERATE" || value === "MEDIUM") {
+    return "#ED6205";
+  }
+
+  return "#16833F";
+}
+
+function areaMatches(
+  area,
+  search,
+  selectedWaste,
+  selectedLevels,
+  days
+) {
+  const report = area.latestReport || {};
+  const query = search.trim().toLowerCase();
+
+  const title = String(
+    report.locationName || ""
+  ).toLowerCase();
+
+  const wasteTypes = getReportWasteTypes(report);
+
+  const level = String(
+    report.pollutionLevel || ""
+  ).toUpperCase();
+
+  const matchesQuery =
+    !query ||
+    title.includes(query) ||
+    String(area.areaId).toLowerCase().includes(query) ||
+    wasteTypes.some((item) =>
+      item.toLowerCase().includes(query)
+    );
+
+  const matchesWaste =
+    selectedWaste.length === 0 ||
+    selectedWaste.some((item) =>
+      wasteTypes.some(
+        (w) => w.toLowerCase() === item.toLowerCase()
+      )
+    );
+
+  const matchesLevel =
+    selectedLevels.length === 0 ||
+    selectedLevels.some((item) =>
+      LEVELS.find(
+        (option) => option.label === item
+      )?.values.includes(level)
+    );
+
+  const created = report.createdAt
+    ? new Date(report.createdAt).getTime()
+    : NaN;
+
+  const matchesDate =
+    days === 0 ||
+    !Number.isFinite(created) ||
+    (created <= Date.now() &&
+      Date.now() - created <= days * 86400000);
+
+  return (
+    matchesQuery &&
+    matchesWaste &&
+    matchesLevel &&
+    matchesDate
+  );
+}
+
+function MapCamera({
+  areas,
+  focusedPosition,
+  locationPosition,
+}) {
   const map = useMap();
+  const initialized = useRef(false);
 
   useEffect(() => {
-    if (position) {
-      map.flyTo(position, 15, { duration: 0.8 });
+    if (initialized.current || areas.length === 0) {
+      return;
     }
-  }, [map, position]);
+
+    const validAreas = areas.filter(
+      (area) => getPosition(area) !== null
+    );
+
+    const points = validAreas.map(getPosition);
+
+    if (!points.length) return;
+
+    initialized.current = true;
+
+    if (points.length === 1) {
+      map.setView(points[0], 16, {
+        animate: false,
+      });
+      return;
+    }
+
+    const bounds = L.latLngBounds(points);
+
+    const diagonal = map.distance(
+      bounds.getSouthWest(),
+      bounds.getNorthEast()
+    );
+
+    if (diagonal > 60000) {
+      const mostReported = [...validAreas].sort(
+        (a, b) =>
+          Number(b.totalReports || 0) -
+          Number(a.totalReports || 0)
+      )[0];
+
+      map.setView(getPosition(mostReported), 15, {
+        animate: false,
+      });
+    } else {
+      map.fitBounds(bounds, {
+        padding: [70, 70],
+        maxZoom: 16,
+        animate: false,
+      });
+    }
+  }, [areas, map]);
+
+  useEffect(() => {
+    if (focusedPosition) {
+      map.flyTo(focusedPosition, 16, {
+        duration: 0.7,
+      });
+    }
+  }, [focusedPosition, map]);
+
+  useEffect(() => {
+    if (locationPosition) {
+      map.flyTo(locationPosition, 16, {
+        duration: 0.7,
+      });
+    }
+  }, [locationPosition, map]);
 
   return null;
 }
 
+function Legend() {
+  const items = [
+    ["#2458AC", "Posisi Anda"],
+    ["#16833F", "Tingkat Keparahan Rendah"],
+    ["#ED6205", "Tingkat Keparahan Sedang"],
+    ["#E52529", "Tingkat Keparahan Tinggi"],
+  ];
+
+  return (
+    <div className="rounded-md bg-white px-4 py-3 shadow-[0_4px_18px_rgba(9,35,81,0.08)] sm:px-5">
+      {items.map(([color, label], index) => (
+        <div
+          key={label}
+          className={`flex items-center gap-3 py-2.5 ${
+            index === items.length - 1
+              ? ""
+              : "border-b border-[#C5D1DF]"
+          }`}
+        >
+          <span
+            className="h-[21px] w-[21px] shrink-0 rounded-full"
+            style={{ backgroundColor: color }}
+          />
+
+          <span className="text-[14px] font-normal text-[#111827] sm:text-[15px]">
+            {label}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function PublicMapPage() {
   const [areas, setAreas] = useState([]);
-  const [selectedArea, setSelectedArea] = useState(null);
-  const [detail, setDetail] = useState(null);
-  const [minimumReports, setMinimumReports] = useState(0);
-  const [search, setSearch] = useState("");
-  const [focus, setFocus] = useState(null);
-  const [myPosition, setMyPosition] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const [search, setSearch] = useState("");
+  const [selectedWaste, setSelectedWaste] = useState([]);
+  const [selectedLevels, setSelectedLevels] = useState([]);
+  const [dateRange, setDateRange] = useState(30);
+
+  const [selectedArea, setSelectedArea] = useState(null);
+  const [areaDetail, setAreaDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  const [focusedPosition, setFocusedPosition] = useState(null);
+  const [locationPosition, setLocationPosition] = useState(null);
   const [locationError, setLocationError] = useState("");
 
   useEffect(() => {
-    let active = true;
+    let mounted = true;
 
     getHeatmap()
       .then((result) => {
-        if (active) setAreas(Array.isArray(result) ? result : []);
+        if (mounted) {
+          setAreas(
+            Array.isArray(result) ? result : []
+          );
+        }
       })
       .catch((err) => {
-        if (active) setError(err.message);
+        if (mounted) {
+          setError(
+            err.message || "Gagal memuat data peta."
+          );
+        }
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (mounted) setLoading(false);
       });
 
     return () => {
-      active = false;
+      mounted = false;
     };
   }, []);
 
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-
-    return areas.filter((area) => {
-      if (Number(area.totalReports) < minimumReports) {
-        return false;
-      }
-
-      if (!term) return true;
-
-      const location = String(
-        area.latestReport?.locationName || ""
-      ).toLowerCase();
-
-      const areaLabel = `area ${area.areaId}`;
-
-      return (
-        location.includes(term) ||
-        areaLabel.includes(term)
-      );
-    });
-  }, [areas, minimumReports, search]);
-
-  const totalReports = filtered.reduce(
-    (sum, area) => sum + Number(area.totalReports || 0),
-    0
+  const filteredAreas = useMemo(
+    () =>
+      areas.filter(
+        (area) =>
+          getPosition(area) &&
+          areaMatches(
+            area,
+            search,
+            selectedWaste,
+            selectedLevels,
+            dateRange
+          )
+      ),
+    [
+      areas,
+      search,
+      selectedWaste,
+      selectedLevels,
+      dateRange,
+    ]
   );
 
-  async function openArea(area) {
+  function toggleSelection(value, setter) {
+    setter((prev) =>
+      prev.includes(value)
+        ? prev.filter((item) => item !== value)
+        : [...prev, value]
+    );
+  }
+
+  function clearFilters() {
+    setSearch("");
+    setSelectedWaste([]);
+    setSelectedLevels([]);
+    setDateRange(30);
+    setError("");
+  }
+
+  async function selectArea(area) {
     setSelectedArea(area);
-    setDetail(null);
+    setAreaDetail(null);
+    setFocusedPosition(getPosition(area));
     setDetailLoading(true);
     setError("");
 
     try {
-      const result = await getHeatmapAreaDetail(area.areaId);
-      setDetail(result);
+      const result = await getHeatmapAreaDetail(
+        area.areaId
+      );
+
+      setAreaDetail(result);
     } catch (err) {
-      setError(err.message);
+      setError(
+        err.message ||
+          "Tidak dapat memuat detail area."
+      );
     } finally {
       setDetailLoading(false);
     }
   }
 
-  function useMyLocation() {
+  function locateMe() {
     setLocationError("");
 
     if (!navigator.geolocation) {
-      setLocationError("Browser tidak mendukung lokasi.");
+      setLocationError(
+        "Browser tidak mendukung akses lokasi."
+      );
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const point = [
-          position.coords.latitude,
-          position.coords.longitude,
-        ];
-        setMyPosition(point);
-        setFocus(point);
+      ({ coords }) => {
+        setLocationPosition([
+          coords.latitude,
+          coords.longitude,
+        ]);
       },
       () => {
         setLocationError(
-          "Lokasi tidak dapat diakses. Periksa izin GPS browser."
+          "Lokasi tidak dapat diakses. Periksa izin lokasi browser."
         );
       },
       {
@@ -142,171 +394,319 @@ export default function PublicMapPage() {
     );
   }
 
+  const totalVisibleReports = filteredAreas.reduce(
+    (total, area) =>
+      total + Number(area.totalReports || 0),
+    0
+  );
+
   return (
-    <div className="flex min-h-screen flex-col bg-white">
-      <PublicNavbar />
-
-      <header className="border-b bg-white px-5 py-5 text-center">
-        <h1 className="text-2xl font-semibold text-slate-900">
-          Peta Sebaran Sampah
-        </h1>
-      </header>
-
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        {/* SIDEBAR FILTER */}
-        <aside className="w-full shrink-0 border-r bg-white p-5 lg:w-[300px]">
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari pantai atau area..."
-            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-blue-600"
+    <div className="flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-white font-sans text-[#14213A]">
+      <header className="relative z-[1001] flex h-[91px] shrink-0 items-center justify-between border-b border-[#D3DCE8] bg-white px-5 sm:px-10 lg:px-[5%]">
+        <Link
+          to="/"
+          className="flex shrink-0 items-center gap-3"
+        >
+          <img
+            src={logo}
+            alt="Logo OceanGuard"
+            className="h-11 w-11 object-contain"
           />
 
-          <div className="mt-5 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Filter</h2>
+          <span className="text-xl font-bold tracking-tight text-[#0F204C] sm:text-2xl">
+            OceanGuard
+          </span>
+        </Link>
+
+        <h1 className="pointer-events-none absolute left-1/2 hidden -translate-x-1/2 whitespace-nowrap text-2xl font-medium text-black md:block">
+          Peta Sebaran Sampah
+        </h1>
+
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Link
+            to="/login"
+            className="rounded-lg border border-[#0B3D91] px-4 py-2.5 text-sm font-semibold text-[#0B3D91] hover:bg-blue-50 sm:px-6"
+          >
+            Masuk
+          </Link>
+
+          <Link
+            to="/register"
+            className="rounded-lg bg-[#0B3D91] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#082D71] sm:px-6"
+          >
+            Daftar
+          </Link>
+        </div>
+      </header>
+
+      <h1 className="shrink-0 border-b border-[#D3DCE8] bg-white py-2 text-center text-lg font-medium text-[#111827] md:hidden">
+        Peta Sebaran Sampah
+      </h1>
+
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <aside className="z-[501] max-h-[43dvh] w-full shrink-0 overflow-y-auto border-b border-[#D7E0EB] bg-white px-5 py-6 md:h-full md:max-h-none md:w-[306px] md:border-b-0 md:border-r">
+          <div className="relative">
+            <svg
+              aria-hidden="true"
+              className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#1F2937]"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-4-4" />
+            </svg>
+
+            <input
+              type="search"
+              value={search}
+              onChange={(event) =>
+                setSearch(event.target.value)
+              }
+              placeholder="Cari nama pantai, teluk, atau desa..."
+              className="h-[66px] w-full rounded-lg border border-[#D2DBE7] bg-white py-3 pl-12 pr-3 text-sm leading-snug outline-none placeholder:text-[#9399A1] focus:border-[#0B3D91]"
+            />
+          </div>
+
+          <div className="mt-2 flex items-center justify-between">
+            <h2 className="text-base font-semibold text-[#111827]">
+              Filter
+            </h2>
+
             <button
               type="button"
-              onClick={() => {
-                setSearch("");
-                setMinimumReports(0);
-                setSelectedArea(null);
-                setDetail(null);
-              }}
-              className="text-sm text-slate-500"
+              onClick={clearFilters}
+              className="text-sm text-[#8A9AB2] hover:text-[#0B3D91]"
             >
               Reset
             </button>
           </div>
 
           <div className="mt-7">
-            <p className="mb-3 text-xs font-semibold uppercase text-slate-400">
-              Kepadatan Laporan
+            <p className="mb-4 text-xs font-medium uppercase text-[#8798AF]">
+              Jenis Sampah
             </p>
 
-            <div className="flex flex-wrap gap-2">
-              {[
-                { label: "Semua", min: 0 },
-                { label: "1+", min: 1 },
-                { label: "3+", min: 3 },
-                { label: "6+", min: 6 },
-              ].map((option) => (
-                <button
-                  key={option.min}
-                  type="button"
-                  onClick={() => setMinimumReports(option.min)}
-                  className={`rounded-full border px-3 py-2 text-sm ${
-                    minimumReports === option.min
-                      ? "border-[#0B3D91] bg-[#0B3D91] text-white"
-                      : "border-[#0B3D91] text-[#0B3D91]"
-                  }`}
+            <div className="space-y-2.5">
+              {WASTE_TYPES.map((name) => (
+                <label
+                  key={name}
+                  className="flex cursor-pointer items-center gap-3 text-[14px] text-[#4A596F]"
                 >
-                  {option.label}
-                </button>
+                  <input
+                    type="checkbox"
+                    checked={selectedWaste.includes(name)}
+                    onChange={() =>
+                      toggleSelection(
+                        name,
+                        setSelectedWaste
+                      )
+                    }
+                    className="h-[18px] w-[18px] accent-[#0B3D91]"
+                  />
+
+                  {name}
+                </label>
               ))}
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={useMyLocation}
-            className="mt-7 w-full rounded-lg border border-[#0B3D91] px-4 py-3 text-sm font-semibold text-[#0B3D91]"
-          >
-            Lokasi Saya
-          </button>
-
-          {locationError && (
-            <p role="alert" className="mt-3 text-xs text-red-600">
-              {locationError}
+          <div className="mt-7">
+            <p className="mb-3 text-xs font-medium uppercase text-[#8798AF]">
+              Tingkat Keparahan
             </p>
-          )}
 
-          <div className="mt-7 rounded-xl bg-slate-50 p-4">
-            <p className="text-xs font-medium uppercase text-slate-500">
+            <div className="flex flex-wrap gap-2">
+              {LEVELS.map(({ label }) => {
+                const active =
+                  selectedLevels.includes(label);
+
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() =>
+                      toggleSelection(
+                        label,
+                        setSelectedLevels
+                      )
+                    }
+                    className={`rounded-full border px-4 py-2 text-xs font-semibold ${
+                      active
+                        ? "border-[#0B3D91] bg-[#0B3D91] text-white"
+                        : "border-[#0B3D91] bg-white text-[#0B3D91] hover:bg-blue-50"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-7">
+            <label
+              htmlFor="public-map-date"
+              className="mb-3 block text-xs font-medium uppercase text-[#8798AF]"
+            >
+              Rentang Tanggal
+            </label>
+
+            <div className="relative">
+              <select
+                id="public-map-date"
+                value={dateRange}
+                onChange={(event) =>
+                  setDateRange(
+                    Number(event.target.value)
+                  )
+                }
+                className="h-[51px] w-full appearance-none rounded-lg border border-[#D2DBE7] bg-white px-4 pr-10 text-sm text-[#637187] outline-none focus:border-[#0B3D91]"
+              >
+                {DATE_OPTIONS.map((option) => (
+                  <option
+                    key={option.value}
+                    value={option.value}
+                  >
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+
+              <svg
+                aria-hidden="true"
+                className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </div>
+          </div>
+
+          <div className="mt-7 rounded-lg bg-[#F7F8FA] px-4 py-4">
+            <p className="text-xs font-medium uppercase text-[#91969E]">
               Kepadatan Laporan
             </p>
-            <div className="mt-3 flex h-2 overflow-hidden rounded-full">
-              <span className="w-1/3 bg-green-600" />
-              <span className="w-1/3 bg-orange-500" />
-              <span className="w-1/3 bg-red-600" />
+
+            <div className="mt-2.5 flex h-[9px] overflow-hidden">
+              <span className="w-1/3 bg-[#16833F]" />
+              <span className="w-1/3 bg-[#ED6205]" />
+              <span className="w-1/3 bg-[#E52529]" />
             </div>
-            <div className="mt-2 flex justify-between text-xs text-slate-400">
+
+            <div className="mt-2 flex justify-between text-xs text-[#90959D]">
               <span>Rendah</span>
               <span>Tinggi</span>
             </div>
           </div>
 
-          <p className="mt-5 text-sm text-slate-500">
+          <button
+            type="button"
+            onClick={locateMe}
+            className="mt-5 w-full rounded-lg border border-[#0B3D91] bg-white px-3 py-2.5 text-sm font-semibold text-[#0B3D91] hover:bg-blue-50"
+          >
+            Lokasi Saya
+          </button>
+
+          {locationError && (
+            <p
+              role="alert"
+              className="mt-2 text-xs text-red-600"
+            >
+              {locationError}
+            </p>
+          )}
+
+          <p className="mt-4 text-xs text-[#8798AF]">
             {loading
-              ? "Memuat peta..."
-              : `${filtered.length} area · ${totalReports} laporan terverifikasi`}
+              ? "Memuat data peta..."
+              : `${filteredAreas.length} area · ${totalVisibleReports} laporan terverifikasi`}
           </p>
         </aside>
 
-        {/* PETA */}
-        <div className="relative min-h-[550px] flex-1">
+        <main className="relative min-h-[360px] min-w-0 flex-1 overflow-hidden bg-[#EAF1F7]">
           <MapContainer
-            center={[-2.5, 118]}
+            center={DEFAULT_CENTER}
             zoom={5}
+            zoomControl={false}
             scrollWheelZoom
-            className="h-[70vh] min-h-[550px] w-full lg:h-[calc(100vh-170px)]"
+            className="h-full w-full"
           >
+            <ZoomControl position="bottomright" />
+
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-            <MapFocus position={focus} />
+            <MapCamera
+              areas={areas}
+              focusedPosition={focusedPosition}
+              locationPosition={locationPosition}
+            />
 
-            {filtered.map((area) => {
-              const lat = Number(area.centerLat);
-              const lon = Number(area.centerLon);
+            {filteredAreas.map((area) => {
+              const position = getPosition(area);
 
-              if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-                return null;
-              }
-
-              const color = getColor(Number(area.totalReports));
+              const color = severityColor(
+                area.latestReport?.pollutionLevel
+              );
 
               return (
                 <CircleMarker
                   key={area.areaId}
-                  center={[lat, lon]}
-                  radius={12 + Math.min(Number(area.totalReports), 15)}
+                  center={position}
+                  radius={11}
                   pathOptions={{
-                    color,
+                    color: "#FFFFFF",
+                    weight: 2.5,
                     fillColor: color,
-                    fillOpacity: 0.48,
-                    weight: 2,
+                    fillOpacity: 1,
                   }}
                   eventHandlers={{
-                    click: () => openArea(area),
+                    click: () => selectArea(area),
                   }}
                 >
                   <Popup>
-                    <strong>Area {area.areaId}</strong>
-                    <p>{area.totalReports} laporan terverifikasi</p>
-                    <button
-                      type="button"
-                      onClick={() => openArea(area)}
-                      style={{ color: BLUE, fontWeight: 700 }}
-                    >
-                      Lihat Detail
-                    </button>
+                    <div className="min-w-[175px]">
+                      <p className="font-semibold">
+                        {area.latestReport?.locationName ||
+                          `Area ${area.areaId}`}
+                      </p>
+
+                      <p>
+                        {area.totalReports} laporan
+                        terverifikasi
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          selectArea(area)
+                        }
+                        className="text-sm font-semibold text-[#0B3D91]"
+                      >
+                        Lihat detail area →
+                      </button>
+                    </div>
                   </Popup>
                 </CircleMarker>
               );
             })}
 
-            {myPosition && (
+            {locationPosition && (
               <CircleMarker
-                center={myPosition}
-                radius={9}
+                center={locationPosition}
+                radius={11}
                 pathOptions={{
-                  color: "#ffffff",
-                  fillColor: "#2457A8",
+                  color: "white",
+                  weight: 2.5,
+                  fillColor: "#2458AC",
                   fillOpacity: 1,
-                  weight: 3,
                 }}
               >
                 <Popup>Posisi Anda</Popup>
@@ -314,106 +714,98 @@ export default function PublicMapPage() {
             )}
           </MapContainer>
 
-          {error && (
-            <p role="alert" className="absolute bottom-4 left-4 z-[500] rounded-lg bg-red-50 p-3 text-sm text-red-600">
-              {error}
-            </p>
-          )}
-        </div>
+          <div className="pointer-events-none absolute right-4 top-6 z-[500] w-[min(342px,calc(100%-32px))] sm:right-6">
+            <div className="pointer-events-auto">
+              {selectedArea ? (
+                <div className="max-h-[65vh] overflow-y-auto rounded-md bg-white p-5 shadow-[0_4px_18px_rgba(9,35,81,0.08)]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedArea(null);
+                      setAreaDetail(null);
+                    }}
+                    className="mb-4 text-xs font-semibold text-[#0B3D91]"
+                  >
+                    ← Kembali ke legenda
+                  </button>
 
-        {/* PANEL DETAIL */}
-        <aside className="w-full shrink-0 border-l bg-white p-5 lg:w-[335px]">
-          {selectedArea ? (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedArea(null);
-                  setDetail(null);
-                }}
-                className="mb-4 text-sm font-semibold text-[#0B3D91]"
-              >
-                ← Kembali ke Legenda
-              </button>
+                  <h2 className="text-lg font-semibold">
+                    {selectedArea.latestReport
+                      ?.locationName ||
+                      `Area ${selectedArea.areaId}`}
+                  </h2>
 
-              <h2 className="text-xl font-semibold">
-                Area {selectedArea.areaId}
-              </h2>
-              <p className="mt-2 text-sm text-slate-500">
-                {selectedArea.totalReports} laporan terverifikasi
-              </p>
+                  <p className="mt-2 text-sm text-[#66758A]">
+                    {selectedArea.totalReports} laporan
+                    terverifikasi
+                  </p>
 
-              {detailLoading ? (
-                <p className="mt-5 text-sm">Memuat detail...</p>
-              ) : (
-                <div className="mt-6 max-h-[55vh] space-y-3 overflow-y-auto">
-                  {(detail?.reports || []).map((report) => (
-                    <div
-                      key={report.id}
-                      className="rounded-xl border border-slate-200 p-4"
-                    >
-                      <h3 className="font-semibold text-slate-800">
-                        Laporan #{report.id}
-                      </h3>
-                      <p className="mt-2 text-sm text-slate-500">
-                        {report.locationName || "Lokasi laporan"}
-                      </p>
-                      <p className="mt-2 text-xs text-slate-400">
-                        {report.createdAt
-                          ? new Date(report.createdAt).toLocaleDateString("id-ID")
-                          : ""}
-                      </p>
-                      {report.description && (
-                        <p className="mt-2 text-sm text-slate-600">
-                          {report.description}
-                        </p>
+                  {detailLoading ? (
+                    <p className="mt-4 text-sm text-slate-500">
+                      Memuat laporan...
+                    </p>
+                  ) : (
+                    <div className="mt-4 space-y-3">
+                      {(areaDetail?.reports || []).map(
+                        (report) => (
+                          <div
+                            key={report.id}
+                            className="rounded-lg border border-[#E1E7EF] p-3"
+                          >
+                            <p className="font-semibold text-[#112452]">
+                              Laporan #{report.id}
+                            </p>
+
+                            <p className="mt-1 text-sm text-[#66758A]">
+                              {report.locationName ||
+                                "Lokasi laporan"}
+                            </p>
+
+                            <p className="mt-1 text-xs text-[#66758A]">
+                              {getReportWasteTypes(
+                                report
+                              ).join(", ")}
+                            </p>
+
+                            {report.description && (
+                              <p className="mt-2 text-sm text-[#334155]">
+                                {report.description}
+                              </p>
+                            )}
+                          </div>
+                        )
                       )}
                     </div>
-                  ))}
+                  )}
+
+                  <Link
+                    to="/reports/new"
+                    className="mt-4 block rounded-md bg-[#0B3D91] px-4 py-2.5 text-center text-sm font-semibold text-white"
+                  >
+                    Buat Laporan
+                  </Link>
                 </div>
+              ) : (
+                <Legend />
               )}
+            </div>
+          </div>
 
-              <Link
-                to="/reports/new"
-                className="mt-6 block rounded-lg bg-[#0B3D91] px-4 py-3 text-center text-sm font-semibold text-white"
-              >
-                Lapor di Area Ini
-              </Link>
-            </>
-          ) : (
-            <>
-              <h2 className="mb-5 text-xl font-semibold">
-                Legenda Peta
-              </h2>
-              <div className="space-y-4 text-sm text-slate-700">
-                {[
-                  ["#2457A8", "Posisi Anda"],
-                  ["#15803D", "Kepadatan rendah (1–2 laporan)"],
-                  ["#F97316", "Kepadatan sedang (3–5 laporan)"],
-                  ["#DC2626", "Kepadatan tinggi (6+ laporan)"],
-                ].map(([color, label]) => (
-                  <div key={label} className="flex items-center gap-3 border-b pb-3">
-                    <span
-                      className="h-5 w-5 shrink-0 rounded-full"
-                      style={{ backgroundColor: color }}
-                    />
-                    <span>{label}</span>
-                  </div>
-                ))}
-              </div>
-
-              <p className="mt-6 text-sm leading-relaxed text-slate-500">
-                Warna menunjukkan jumlah laporan terverifikasi di dalam
-                cluster area, bukan tingkat keparahan tiap laporan.
-              </p>
-
-              <p className="mt-4 text-xs text-slate-400">
-                Klik titik area pada peta untuk melihat seluruh laporan
-                yang tergabung dalam radius 20 meter.
-              </p>
-            </>
+          {loading && (
+            <div className="pointer-events-none absolute bottom-5 left-5 z-[500] rounded-lg bg-white px-4 py-3 text-sm text-[#0B3D91] shadow">
+              Memuat data peta...
+            </div>
           )}
-        </aside>
+
+          {error && (
+            <div
+              role="alert"
+              className="absolute bottom-5 left-5 z-[500] max-w-[450px] rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 shadow"
+            >
+              {error}
+            </div>
+          )}
+        </main>
       </div>
     </div>
   );

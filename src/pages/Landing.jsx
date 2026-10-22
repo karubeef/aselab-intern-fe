@@ -18,22 +18,30 @@ import { getAllInformasi } from "../api/informasi";
 import { getHeatmap } from "../api/reports";
 
 import heroImage from "../assets/oceanGuard_landingPage.jpg";
+import cleanupImage from "../assets/oceanGuard_landingPageImage2.png";
+import mapDecor from "../assets/oceanguard-decor-map.png";
+import statusDecor from "../assets/oceanguard-decor-status.png";
+import infoDecor from "../assets/oceanguard-decor-info.png";
+import reefDecor from "../assets/oceanguard-decor-reef.png";
 
 const steps = [
   {
     number: "01",
     title: "Foto sampahnya",
-    description: "Ambil foto kondisi sampah sebagai bukti pelaporan.",
+    description:
+      "Ambil foto kondisi sampah sebagai bukti pelaporan.",
   },
   {
     number: "02",
     title: "Kirim laporan",
-    description: "Tentukan lokasi, jenis sampah, dan tingkat keparahan.",
+    description:
+      "Tentukan lokasi, jenis sampah, dan tingkat keparahan.",
   },
   {
     number: "03",
     title: "Pantau sampai selesai",
-    description: "Pantau status setelah laporan diperiksa Admin.",
+    description:
+      "Pantau status setelah laporan diperiksa Admin.",
   },
 ];
 
@@ -115,8 +123,10 @@ function MapBounds({ points }) {
 export default function Landing() {
   const [articles, setArticles] = useState([]);
   const [areas, setAreas] = useState([]);
+
   const [articleLoading, setArticleLoading] = useState(true);
   const [mapLoading, setMapLoading] = useState(true);
+
   const [articleError, setArticleError] = useState("");
   const [mapError, setMapError] = useState("");
 
@@ -137,7 +147,9 @@ export default function Landing() {
         }
       })
       .finally(() => {
-        if (active) setArticleLoading(false);
+        if (active) {
+          setArticleLoading(false);
+        }
       });
 
     getHeatmap()
@@ -154,7 +166,9 @@ export default function Landing() {
         }
       })
       .finally(() => {
-        if (active) setMapLoading(false);
+        if (active) {
+          setMapLoading(false);
+        }
       });
 
     return () => {
@@ -164,7 +178,8 @@ export default function Landing() {
 
   const totalReports = useMemo(() => {
     return areas.reduce(
-      (sum, area) => sum + Number(area.totalReports || 0),
+      (sum, area) =>
+        sum + Number(area.totalReports || 0),
       0
     );
   }, [areas]);
@@ -211,16 +226,23 @@ export default function Landing() {
             </h1>
 
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/90 sm:text-lg">
-              Foto, kirim lokasi, dan pantau sampai benar-benar
-              ditangani dinas setempat. Butuh dua menit.
+              Foto, kirim lokasi, dan pantau sampai
+              benar-benar ditangani dinas setempat.
+              Butuh dua menit.
             </p>
 
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link to="/reports/new" className={primaryBtn}>
+              <Link
+                to="/reports/new"
+                className={primaryBtn}
+              >
                 Lapor Sekarang
               </Link>
 
-              <Link to="/public-map" className={secondaryBtn}>
+              <Link
+                to="/public-map"
+                className={secondaryBtn}
+              >
                 Lihat Peta
               </Link>
             </div>
@@ -228,18 +250,29 @@ export default function Landing() {
         </div>
       </section>
 
-      <section
+            <section
         id="peta"
-        className="relative -mt-px bg-[#07559E] px-5 pb-12 pt-8 text-white"
+        className="relative isolate -mt-px overflow-hidden bg-[#07559E] px-5 pb-12 pt-8 text-white"
       >
-        <div className="mx-auto max-w-6xl">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-24 bg-gradient-to-b from-[#07559E] via-[#07559E]/75 to-transparent" />
+
+        <img
+          src={mapDecor}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className="pointer-events-none absolute bottom-0 left-1/2 z-0 h-auto w-full min-w-[900px] -translate-x-1/2 select-none md:min-w-0"
+        />
+
+        <div className="relative z-10 mx-auto max-w-6xl">
           <div className="mb-10 text-center">
             <h2 className="text-3xl font-bold">
               Bagaimana kondisi pantai di dekatmu?
             </h2>
 
             <p className="mt-3 text-blue-100">
-              Lihat persebaran laporan sampah yang sudah diverifikasi.
+              Lihat persebaran laporan sampah yang
+              sudah diverifikasi.
             </p>
           </div>
 
@@ -258,7 +291,9 @@ export default function Landing() {
               <MapBounds points={coordinates} />
 
               {validPoints.map((area) => {
-                const total = Number(area.totalReports || 0);
+                const total = Number(
+                  area.totalReports || 0
+                );
                 const color = getDensityColor(total);
 
                 return (
@@ -268,7 +303,10 @@ export default function Landing() {
                       Number(area.centerLat),
                       Number(area.centerLon),
                     ]}
-                    radius={Math.max(9, Math.min(20, 9 + total))}
+                    radius={Math.max(
+                      9,
+                      Math.min(20, 9 + total)
+                    )}
                     pathOptions={{
                       color: "#FFFFFF",
                       weight: 2,
@@ -278,14 +316,19 @@ export default function Landing() {
                   >
                     <Popup>
                       <div className="min-w-[170px]">
-                        <strong>Area {area.areaId}</strong>
+                        <strong>
+                          Area {area.areaId}
+                        </strong>
 
                         <p>
-                          {area.latestReport?.locationName ||
+                          {area.latestReport
+                            ?.locationName ||
                             "Area laporan"}
                         </p>
 
-                        <p>{total} laporan terverifikasi</p>
+                        <p>
+                          {total} laporan terverifikasi
+                        </p>
                       </div>
                     </Popup>
                   </CircleMarker>
@@ -351,19 +394,31 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="bg-[#07559E] px-5 pb-20 pt-20 text-white">
-        <div className="mx-auto max-w-6xl">
+      <section className="relative isolate overflow-hidden bg-[#07559E] px-5 pb-20 pt-20 text-white">
+        <img
+          src={statusDecor}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className="pointer-events-none absolute bottom-0 left-1/2 z-0 h-auto w-full min-w-[900px] -translate-x-1/2 select-none md:min-w-0"
+        />
+
+        <div className="relative z-10 mx-auto max-w-6xl">
           <h2 className="text-center text-3xl font-bold">
             Laporanmu tidak berhenti di kotak masuk
           </h2>
 
           <p className="mt-3 text-center text-blue-100">
-            Setiap laporan memiliki tahapan yang dapat dipantau.
+            Setiap laporan memiliki tahapan yang
+            dapat dipantau.
           </p>
 
           <div className="mt-9 grid grid-cols-2 gap-4 rounded-2xl border border-white/25 bg-white/5 p-6 md:grid-cols-6">
             {statuses.map((status, index) => (
-              <div key={status} className="text-center">
+              <div
+                key={status}
+                className="text-center"
+              >
                 <div className="mx-auto mb-3 grid h-10 w-10 place-items-center rounded-full bg-white/15 font-bold">
                   {index + 1}
                 </div>
@@ -376,112 +431,218 @@ export default function Landing() {
           </div>
 
           <p className="mt-7 text-center text-sm text-blue-100">
-            Laporan yang ditolak tetap tersimpan di riwayat,
-            lengkap dengan alasannya.
+            Laporan yang ditolak tetap tersimpan
+            di riwayat, lengkap dengan alasannya.
           </p>
         </div>
       </section>
 
-      <section
-        id="informasi"
-        className="bg-[#07559E] px-5 pb-24 pt-12 text-white"
-      >
+      <section className="bg-white px-5 py-16 sm:py-20">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-7 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 className="text-3xl font-bold">
-                Informasi & Edukasi
-              </h2>
+          <h2 className="text-center text-2xl font-bold text-[#0B3D91] sm:text-3xl">
+            Wilayah yang sudah punya dinas terdaftar
+          </h2>
 
-              <p className="mt-2 text-blue-100">
-                Artikel edukasi terbaru yang diterbitkan Admin.
-              </p>
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {[
+              {
+                name: "Bali",
+                desc: "5 kabupaten · 3 dinas aktif",
+              },
+              {
+                name: "Jawa Barat",
+                desc: "7 kabupaten · 1 dinas aktif",
+              },
+              {
+                name: "Wilayah lain",
+                desc: "Belum ada dinas terdaftar",
+              },
+            ].map((region) => (
+              <div
+                key={region.name}
+                className="rounded-lg border border-blue-200 bg-white px-5 py-4"
+              >
+                <h3 className="font-semibold text-[#10254A]">
+                  {region.name}
+                </h3>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  {region.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-5 rounded-lg border border-blue-200 px-4 py-3 text-xs leading-relaxed text-[#0B3D91]">
+            Daftar wilayah di atas mengikuti contoh
+            desain Figma. Angka cakupan dinas perlu
+            disambungkan ke data instansi yang
+            terverifikasi sebelum digunakan sebagai
+            informasi resmi.
+          </p>
+        </div>
+      </section>
+
+      <div className="relative isolate overflow-hidden bg-gradient-to-b from-[#0A509D] via-[#093B85] to-[#102D69]">
+        <img
+          src={infoDecor}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className="pointer-events-none absolute left-1/2 top-0 z-0 h-auto w-full min-w-[900px] -translate-x-1/2 select-none md:min-w-0"
+        />
+
+        <img
+          src={reefDecor}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className="pointer-events-none absolute bottom-0 left-1/2 z-0 h-auto w-full min-w-[900px] -translate-x-1/2 select-none md:min-w-0"
+        />
+
+        <section
+          id="informasi"
+          className="relative z-10 bg-transparent px-5 pb-16 pt-20 text-white"
+        >
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-7 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-3xl font-bold">
+                  Ikut turun tangan, bukan cuma melapor
+                </h2>
+
+                <p className="mt-2 text-blue-100">
+                  Event bersih pantai dan bacaan
+                  singkat soal sampah laut.
+                </p>
+              </div>
+
+              <Link
+                to="/informasi"
+                className="text-sm font-semibold hover:underline"
+              >
+                Lihat semua →
+              </Link>
             </div>
 
             <Link
-              to="/informasi"
-              className="text-sm font-semibold hover:underline"
+              to="/challenges"
+              className="group mb-6 flex flex-col gap-4 rounded-xl border border-white/30 bg-white/10 p-4 transition hover:bg-white/15 sm:flex-row sm:items-center"
             >
-              Lihat semua →
-            </Link>
-          </div>
+              <img
+                src={cleanupImage}
+                alt="Ilustrasi penanganan sampah laut"
+                className="h-32 w-full rounded-lg object-cover sm:h-28 sm:w-48"
+                loading="lazy"
+              />
 
-          {articleLoading ? (
-            <p>Memuat artikel...</p>
-          ) : articleError ? (
-            <p
-              role="alert"
-              className="rounded-lg bg-white p-4 text-red-600"
-            >
-              {articleError}
-            </p>
-          ) : articles.length === 0 ? (
-            <div className="rounded-xl bg-white p-10 text-center text-slate-500">
-              Belum ada artikel dari Admin.
-            </div>
-          ) : (
-            <div className="grid gap-5 md:grid-cols-3">
-              {articles.slice(0, 3).map((article) => (
-                <PublicArticleCard
-                  key={article.id}
-                  article={article}
-                />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium uppercase tracking-wide text-blue-100">
+                  Contoh kegiatan · Lihat challenge OceanGuard
+                </p>
+
+                <h3 className="mt-1 text-lg font-bold">
+                  Pekan Bersih Pantai
+                </h3>
+
+                <p className="mt-2 text-sm text-blue-100">
+                  Lihat tantangan yang tersedia dan
+                  ikuti kontribusi menjaga laut melalui
+                  akun OceanGuard.
+                </p>
+              </div>
+
+              <span className="text-sm font-semibold">
+                Lihat tantangan →
+              </span>
+            </Link>
+
+            {articleLoading ? (
+              <p>Memuat artikel...</p>
+            ) : articleError ? (
+              <p
+                role="alert"
+                className="rounded-lg bg-white p-4 text-red-600"
+              >
+                {articleError}
+              </p>
+            ) : articles.length === 0 ? (
+              <div className="rounded-xl bg-white p-10 text-center text-slate-500">
+                Belum ada artikel dari Admin.
+              </div>
+            ) : (
+              <div className="grid gap-5 md:grid-cols-3">
+                {articles
+                  .slice(0, 3)
+                  .map((article) => (
+                    <PublicArticleCard
+                      key={article.id}
+                      article={article}
+                    />
+                  ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section
+          id="faq"
+          className="relative z-10 bg-transparent px-5 pb-14 pt-10 sm:pb-20"
+        >
+          <div className="mx-auto max-w-5xl rounded-2xl bg-white px-6 py-12 shadow-[0_16px_45px_rgba(0,20,58,0.12)] sm:px-12">
+            <h2 className="mb-8 text-center text-3xl font-bold text-[#0B3D91]">
+              Pertanyaan yang sering ditanyakan
+            </h2>
+
+            <div className="space-y-3">
+              {faqs.map((faq, index) => (
+                <details
+                  key={faq.question}
+                  open={index === 0}
+                  className="group rounded-lg border border-slate-200 bg-white p-5"
+                >
+                  <summary className="cursor-pointer font-medium">
+                    {faq.question}
+                  </summary>
+
+                  <p className="mt-3 text-sm leading-relaxed text-slate-500">
+                    {faq.answer}
+                  </p>
+                </details>
               ))}
             </div>
-          )}
-        </div>
-      </section>
+          </div>
+        </section>
 
-      <section
-        id="faq"
-        className="bg-white px-5 pb-24 pt-20"
-      >
-        <div className="mx-auto max-w-4xl">
-          <h2 className="mb-8 text-center text-3xl font-bold text-[#0B3D91]">
-            Pertanyaan yang sering ditanyakan
-          </h2>
+        <section className="relative z-10 bg-transparent px-5 pb-44 pt-16 text-center text-white sm:pb-60">
+          <div className="mx-auto max-w-4xl">
+            <h2 className="text-3xl font-bold">
+              Ada sampah di pantai dekat rumahmu?
+            </h2>
 
-          <div className="space-y-3">
-            {faqs.map((faq, index) => (
-              <details
-                key={faq.question}
-                open={index === 0}
-                className="group rounded-lg border border-slate-200 bg-white p-5"
+            <p className="mt-3 text-blue-100">
+              Butuh dua menit. Foto, kirim, lalu
+              pantau sampai selesai.
+            </p>
+
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Link
+                to="/reports/new"
+                className={primaryBtn}
               >
-                <summary className="cursor-pointer font-medium">
-                  {faq.question}
-                </summary>
+                Lapor Sekarang
+              </Link>
 
-                <p className="mt-3 text-sm leading-relaxed text-slate-500">
-                  {faq.answer}
-                </p>
-              </details>
-            ))}
+              <Link
+                to="/register"
+                className={secondaryBtn}
+              >
+                Buat Akun Gratis
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
-
-      <section className="bg-[#102D69] px-5 py-20 text-center text-white">
-        <div className="mx-auto max-w-4xl">
-          <h2 className="text-3xl font-bold">
-            Ada sampah di pantai dekat rumahmu?
-          </h2>
-
-          <p className="mt-3 text-blue-100">
-            Butuh dua menit. Foto, kirim, lalu pantau sampai selesai.
-          </p>
-
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Link to="/reports/new" className={primaryBtn}>
-              Lapor Sekarang
-            </Link>
-
-            <Link to="/register" className={secondaryBtn}>
-              Buat Akun Gratis
-            </Link>
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
       <PublicFooter />
     </div>
