@@ -2,7 +2,10 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-import { getAllInformasi, getInformasiById } from "../api/informasi";
+import {
+  getAllInformasi,
+  getInformasiById,
+} from "../api/informasi";
 
 import PublicNavbar from "../components/public/PublicNavbar";
 import PublicFooter from "../components/public/PublicFooter";
@@ -33,18 +36,27 @@ export default function PublicArticleDetailPage() {
 
         setArticle(detail);
 
-        const recommendations = (Array.isArray(allArticles)
-          ? allArticles
-          : []
+        const recommendations = (
+          Array.isArray(allArticles)
+            ? allArticles
+            : []
         )
-          .filter((item) => String(item.id) !== String(id))
+          .filter(
+            (item) => String(item.id) !== String(id)
+          )
           .slice(0, 2);
 
         setRelated(recommendations);
       } catch (err) {
-        if (active) setError(err.message);
+        if (active) {
+          setError(
+            err.message || "Gagal memuat artikel."
+          );
+        }
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     }
 
@@ -56,11 +68,14 @@ export default function PublicArticleDetailPage() {
   }, [id]);
 
   const formattedDate = article?.createdAt
-    ? new Date(article.createdAt).toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
+    ? new Date(article.createdAt).toLocaleDateString(
+        "id-ID",
+        {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }
+      )
     : "";
 
   return (
@@ -73,21 +88,42 @@ export default function PublicArticleDetailPage() {
         </div>
       ) : error || !article ? (
         <div className="mx-auto max-w-6xl px-6 py-20">
-          <p role="alert" className="text-red-600">
+          <p
+            role="alert"
+            className="text-red-600"
+          >
             {error || "Artikel tidak ditemukan."}
           </p>
-          <Link to="/informasi" className="mt-5 inline-block text-blue-700">
+
+          <Link
+            to="/informasi"
+            className="mt-5 inline-block text-blue-700"
+          >
             ← Kembali ke Informasi
           </Link>
         </div>
       ) : (
         <>
-          {/* ARTICLE HEADER */}
-          <section className="bg-[#0B3D91] px-6 py-12 text-white">
-            <div className="mx-auto max-w-6xl">
+          <section className="relative isolate overflow-hidden bg-gradient-to-b from-[#07559E] via-[#0B3D91] to-[#0D1434] px-6 py-12 text-white">
+            <div className="relative z-10 mx-auto max-w-6xl">
               <p className="mb-5 text-sm text-blue-100">
-                <Link to="/">Beranda</Link> /{" "}
-                <Link to="/informasi">Informasi & Edukasi</Link> / Artikel
+                <Link
+                  to="/"
+                  className="transition-opacity duration-200 hover:opacity-75"
+                >
+                  Beranda
+                </Link>
+
+                {" / "}
+
+                <Link
+                  to="/informasi"
+                  className="transition-opacity duration-200 hover:opacity-75"
+                >
+                  Informasi & Edukasi
+                </Link>
+
+                {" / Artikel"}
               </p>
 
               <span className="text-xs font-semibold uppercase text-blue-100">
@@ -104,8 +140,7 @@ export default function PublicArticleDetailPage() {
             </div>
           </section>
 
-          {/* ARTICLE BODY */}
-          <section className="px-6 py-12">
+          <section className="bg-white px-6 py-12">
             <div className="mx-auto max-w-6xl">
               <div className="max-w-4xl">
                 {article.coverImageUrl && (
@@ -115,6 +150,7 @@ export default function PublicArticleDetailPage() {
                       alt={article.title}
                       className="max-h-[470px] w-full rounded-xl object-cover"
                     />
+
                     <figcaption className="mt-3 text-xs text-slate-400">
                       Gambar sampul artikel OceanGuard
                     </figcaption>
@@ -125,10 +161,10 @@ export default function PublicArticleDetailPage() {
                   {article.content}
                 </article>
 
-                <div className="mt-10 border-t pt-6">
+                <div className="mt-10 border-t border-slate-200 pt-6">
                   <Link
                     to="/informasi"
-                    className="inline-flex rounded-lg border border-[#0B3D91] px-5 py-3 text-sm font-semibold text-[#0B3D91]"
+                    className="inline-flex rounded-lg border border-[#0B3D91] px-5 py-3 text-sm font-semibold text-[#0B3D91] transition-colors duration-200 hover:bg-blue-50"
                   >
                     Kembali ke Informasi & Edukasi
                   </Link>
@@ -137,13 +173,13 @@ export default function PublicArticleDetailPage() {
             </div>
           </section>
 
-          {/* RELATED ARTICLES */}
           {related.length > 0 && (
             <section className="bg-slate-100 px-6 py-16">
               <div className="mx-auto max-w-6xl">
                 <h2 className="mb-8 text-2xl font-semibold text-[#0B3D91]">
                   Lanjutkan membaca
                 </h2>
+
                 <div className="grid gap-6 md:grid-cols-2">
                   {related.map((item) => (
                     <PublicArticleCard
@@ -156,18 +192,19 @@ export default function PublicArticleDetailPage() {
             </section>
           )}
 
-          {/* BOTTOM CTA */}
-          <section className="bg-[#0B3D91] px-6 py-14 text-white">
-            <div className="mx-auto max-w-6xl">
+          <section className="relative isolate overflow-hidden bg-gradient-to-b from-[#07559E] via-[#0B3D91] to-[#0D1434] px-6 py-14 text-white">
+            <div className="relative z-10 mx-auto max-w-6xl">
               <h2 className="text-2xl font-semibold">
                 Lihat sampah di pesisir? Mulai dari satu laporan.
               </h2>
+
               <p className="mt-3 text-blue-100">
                 Dokumentasikan kondisinya dan bantu petugas menemukan lokasinya.
               </p>
+
               <Link
                 to="/reports/new"
-                className="mt-5 inline-block rounded-lg bg-white px-5 py-3 text-sm font-semibold text-[#0B3D91]"
+                className="mt-5 inline-block rounded-lg bg-white px-5 py-3 text-sm font-semibold text-[#0B3D91] transition-colors duration-200 hover:bg-blue-50"
               >
                 Lapor Sekarang
               </Link>
