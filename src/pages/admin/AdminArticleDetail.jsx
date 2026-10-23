@@ -1,10 +1,22 @@
+
 import { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { getInformasiById, deleteInformasi } from "../../api/informasi";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+
+import {
+  getInformasiById,
+  deleteInformasi,
+} from "../../api/informasi";
+
 import ReporterLayout from "../../components/ReporterLayout";
 import NoticeBanner from "../../components/NoticeBanner";
 import ArticleView from "../../components/ArticleView";
 import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
+
 import { formatLongDate } from "../../utils/articleFormat";
 
 export default function AdminArticleDetail() {
@@ -15,21 +27,32 @@ export default function AdminArticleDetail() {
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState(location.state?.notice || null);
+  const [notice, setNotice] = useState(
+    location.state?.notice || null
+  );
+
   const [showModal, setShowModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     if (location.state?.notice) {
-      navigate(location.pathname, { replace: true, state: null });
+      navigate(location.pathname, {
+        replace: true,
+        state: null,
+      });
     }
+
     loadArticle();
   }, [id]);
 
   useEffect(() => {
     if (!notice) return;
-    const timer = setTimeout(() => setNotice(null), 5000);
+
+    const timer = setTimeout(() => {
+      setNotice(null);
+    }, 5000);
+
     return () => clearTimeout(timer);
   }, [notice]);
 
@@ -37,10 +60,15 @@ export default function AdminArticleDetail() {
     try {
       setLoading(true);
       setError("");
+
       const data = await getInformasiById(id);
       setArticle(data);
     } catch (err) {
-      setError(err.message === "Informasi tidak ditemukan" ? "Artikel tidak ditemukan." : err.message);
+      setError(
+        err.message === "Informasi tidak ditemukan"
+          ? "Artikel tidak ditemukan."
+          : err.message
+      );
     } finally {
       setLoading(false);
     }
@@ -57,6 +85,7 @@ export default function AdminArticleDetail() {
 
     try {
       await deleteInformasi(article.id);
+
       navigate("/admin/articles", {
         state: {
           notice: {
@@ -75,31 +104,38 @@ export default function AdminArticleDetail() {
   return (
     <ReporterLayout>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#15316E]">Kelola Artikel</h1>
-        <p className="text-slate-400 text-sm">Kelola informasi dan edukasi tentang sampah laut</p>
+        <h1 className="text-2xl font-bold text-[#15316E]">
+          Kelola Artikel
+        </h1>
+
+        <p className="text-slate-400 text-sm">
+          Kelola informasi dan edukasi tentang sampah laut
+        </p>
       </div>
 
       {notice && <NoticeBanner {...notice} />}
 
-      <div className="flex items-center justify-between mb-5">
+      <div className="mb-5 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
           to="/admin/articles"
-          className="border border-[#0B3D91] text-[#0B3D91] font-semibold px-5 py-2.5 rounded-lg text-sm"
+          className="flex min-h-[44px] w-full items-center justify-center whitespace-nowrap rounded-lg border border-[#0B3D91] px-5 py-2.5 text-center text-sm font-semibold text-[#0B3D91] transition-colors hover:bg-blue-50 sm:w-auto"
         >
           Kembali ke Daftar Artikel
         </Link>
 
         {article && (
-          <div className="flex gap-3">
+          <div className="grid w-full grid-cols-2 gap-3 sm:flex sm:w-auto sm:items-center">
             <Link
               to={`/admin/articles/${article.id}/edit`}
-              className="border border-[#0B3D91] text-[#0B3D91] font-semibold px-5 py-2.5 rounded-lg text-sm"
+              className="flex min-h-[44px] w-full items-center justify-center whitespace-nowrap rounded-lg border border-[#0B3D91] px-3 py-2.5 text-center text-sm font-semibold text-[#0B3D91] transition-colors hover:bg-blue-50 sm:w-auto sm:px-5"
             >
               Edit Artikel
             </Link>
+
             <button
+              type="button"
               onClick={openModal}
-              className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm"
+              className="flex min-h-[44px] w-full items-center justify-center whitespace-nowrap rounded-lg bg-red-600 px-3 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-red-700 sm:w-auto sm:px-6"
             >
               Hapus
             </button>
@@ -107,10 +143,16 @@ export default function AdminArticleDetail() {
         )}
       </div>
 
-      {loading && <p className="text-slate-500">Memuat artikel...</p>}
+      {loading && (
+        <p className="text-slate-500">
+          Memuat artikel...
+        </p>
+      )}
 
       {!loading && error && (
-        <p className="bg-red-50 text-red-600 text-sm rounded-lg px-4 py-3">{error}</p>
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+          {error}
+        </p>
       )}
 
       {!loading && article && (

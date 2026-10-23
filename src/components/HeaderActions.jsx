@@ -16,28 +16,26 @@ export default function HeaderActions() {
   const { user } = useAuth();
 
   return (
-    <div className="flex items-center justify-end gap-3">
-      {/* NOTIFIKASI */}
+    <div className="og-header-actions flex items-center justify-end gap-3">
       <NotificationBell />
 
-      {/* PROFIL */}
       <Link
         to="/profile"
-        className="flex shrink-0 items-center gap-2 bg-[#15316E] text-white rounded-full pl-1.5 pr-4 py-1.5 hover:bg-[#1d4085] transition-colors"
+        className="og-profile-chip flex shrink-0 items-center gap-2 bg-[#15316E] text-white rounded-full pl-1.5 pr-4 py-1.5 hover:bg-[#1d4085] transition-colors"
       >
         {user?.profilePicture ? (
           <img
             src={user.profilePicture}
             alt="Foto profil"
-            className="w-9 h-9 rounded-full object-cover"
+            className="og-profile-avatar w-9 h-9 rounded-full object-cover"
           />
         ) : (
-          <span className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold">
+          <span className="og-profile-avatar w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold">
             {user?.name?.[0]?.toUpperCase() || "U"}
           </span>
         )}
 
-        <span className="text-sm font-medium whitespace-nowrap">
+        <span className="og-profile-name text-sm font-medium whitespace-nowrap">
           {formatShortName(user?.name) || "Pengguna"}
         </span>
       </Link>

@@ -24,12 +24,15 @@ function formatRelativeTime(dateString) {
   );
 
   if (diffSeconds < 60) return "Baru saja";
+
   if (diffSeconds < 3600) {
     return `${Math.floor(diffSeconds / 60)} mnt lalu`;
   }
+
   if (diffSeconds < 86400) {
     return `${Math.floor(diffSeconds / 3600)} jam lalu`;
   }
+
   if (diffSeconds < 604800) {
     return `${Math.floor(diffSeconds / 86400)} hari lalu`;
   }
@@ -83,7 +86,7 @@ export default function NotificationBell() {
       setNotifications(data.notifications);
       setUnreadCount(data.unreadCount);
     } catch {
-      // Pertahankan data yang sudah ada jika permintaan gagal.
+      // Data sebelumnya tetap digunakan jika permintaan gagal.
     }
   }
 
@@ -163,31 +166,32 @@ export default function NotificationBell() {
   }
 
   return (
-    <div ref={containerRef} className="relative shrink-0">
-      {/* Tombol lonceng */}
+    <div
+      ref={containerRef}
+      className="og-notification-root relative shrink-0"
+    >
       <button
         type="button"
         onClick={handleToggle}
         aria-label="Notifikasi"
         aria-expanded={open}
-        className="relative flex h-11 w-11 items-center justify-center rounded-full bg-[#15316E] hover:bg-[#1d4085] transition-colors"
+        className="og-notification-trigger relative flex h-11 w-11 items-center justify-center rounded-full bg-[#15316E] hover:bg-[#1d4085] transition-colors"
       >
         <img
           src={notificationBellIcon}
           alt=""
-          className="h-7 w-7 object-contain"
+          className="og-notification-icon h-7 w-7 object-contain"
         />
 
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+          <span className="og-notification-count absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
 
-      {/* Dropdown notifikasi */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 z-50 w-96 max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
+        <div className="og-notification-popover absolute right-0 top-full mt-2 z-50 w-96 max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
           <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100">
             <h3 className="font-semibold text-sm text-slate-800">
               Notifikasi Terkini
