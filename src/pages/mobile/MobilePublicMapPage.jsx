@@ -6,11 +6,13 @@ import {
   useRef,
   useState,
 } from "react";
+
 import {
   Link,
   useLocation,
   useNavigate,
 } from "react-router-dom";
+
 import {
   Circle,
   CircleMarker,
@@ -19,6 +21,7 @@ import {
   TileLayer,
   useMap,
 } from "react-leaflet";
+
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -39,11 +42,7 @@ const WASTES = [
   "Berbahaya (B3)",
 ];
 
-const LEVELS = [
-  "Rendah",
-  "Sedang",
-  "Tinggi",
-];
+const LEVELS = ["Rendah", "Sedang", "Tinggi"];
 
 const OPTIONS = [
   { value: "30", label: "30 Hari Terakhir" },
@@ -65,12 +64,10 @@ function getCoord(area) {
   const lat = Number(area.centerLat);
   const lon = Number(area.centerLon);
 
-  return (
-    Number.isFinite(lat) &&
+  return Number.isFinite(lat) &&
     Number.isFinite(lon) &&
     Math.abs(lat) <= 90 &&
     Math.abs(lon) <= 180
-  )
     ? [lat, lon]
     : null;
 }
@@ -78,6 +75,7 @@ function getCoord(area) {
 function getAreaColor(count) {
   if (count >= 6) return "#E52529";
   if (count >= 3) return "#ED6205";
+
   return "#16833F";
 }
 
@@ -165,17 +163,17 @@ function levelName(report) {
   }
 
   if (
-    level === "MODERATE" ||
-    level === "MEDIUM" ||
-    level === "SEDANG"
+    ["MODERATE", "MEDIUM", "SEDANG"].includes(
+      level
+    )
   ) {
     return "Sedang";
   }
 
   if (
-    level === "HIGH" ||
-    level === "CRITICAL" ||
-    level === "TINGGI"
+    ["HIGH", "CRITICAL", "TINGGI"].includes(
+      level
+    )
   ) {
     return "Tinggi";
   }
@@ -216,8 +214,8 @@ function matchesReport(report, params) {
 
   if (
     wastes.length &&
-    !getWasteNames(report).some((w) =>
-      wastes.includes(w)
+    !getWasteNames(report).some((name) =>
+      wastes.includes(name)
     )
   ) {
     return false;
@@ -247,7 +245,7 @@ function matchesReport(report, params) {
   return true;
 }
 
-async function readDetail(areaId) {
+function readDetail(areaId) {
   const key = String(areaId);
   const cached = detailCache.get(key);
 
@@ -273,10 +271,13 @@ async function readDetail(areaId) {
 
 function FocusMap({ areas, selected }) {
   const map = useMap();
-  const init = useRef(false);
+  const initialized = useRef(false);
 
   useEffect(() => {
-    if (!areas.length || init.current) {
+    if (
+      !areas.length ||
+      initialized.current
+    ) {
       return;
     }
 
@@ -286,7 +287,7 @@ function FocusMap({ areas, selected }) {
 
     if (!points.length) return;
 
-    init.current = true;
+    initialized.current = true;
 
     if (points.length === 1) {
       map.setView(points[0], 18, {
@@ -384,17 +385,11 @@ function FilterScreen({ params, onApply }) {
     }
 
     if (wastes.length) {
-      next.set(
-        "waste",
-        wastes.join("|")
-      );
+      next.set("waste", wastes.join("|"));
     }
 
     if (levels.length) {
-      next.set(
-        "levels",
-        levels.join("|")
-      );
+      next.set("levels", levels.join("|"));
     }
 
     next.set("days", days);
@@ -456,11 +451,7 @@ function FilterScreen({ params, onApply }) {
                 type="checkbox"
                 checked={wastes.includes(w)}
                 onChange={() =>
-                  toggle(
-                    w,
-                    wastes,
-                    setWastes
-                  )
+                  toggle(w, wastes, setWastes)
                 }
               />
 
@@ -477,7 +468,9 @@ function FilterScreen({ params, onApply }) {
               <button
                 key={level}
                 type="button"
-                aria-pressed={levels.includes(level)}
+                aria-pressed={
+                  levels.includes(level)
+                }
                 onClick={() =>
                   toggle(
                     level,
@@ -564,12 +557,11 @@ function SummaryScreen({
   loading,
   error,
 }) {
-  const [detail, setDetail] = useState(null);
-  const [detailLoading, setDetailLoading] =
-    useState(true);
-
-  const [detailError, setDetailError] =
-    useState("");
+  const [state, setState] = useState({
+    areaId: null,
+    detail: null,
+    error: "",
+  });
 
   const selected = areas.find(
     (area) =>
@@ -577,35 +569,44 @@ function SummaryScreen({
   );
 
   useEffect(() => {
-    let mounted = true;
-
-    setDetailLoading(true);
-    setDetailError("");
+    let active = true;
 
     readDetail(areaId)
-      .then((value) => {
-        if (mounted) {
-          setDetail(value);
+      .then((detail) => {
+        if (active) {
+          setState({
+            areaId,
+            detail,
+            error: "",
+          });
         }
       })
       .catch((err) => {
-        if (mounted) {
-          setDetailError(
-            err.message ||
-              "Gagal memuat ringkasan area"
-          );
-        }
-      })
-      .finally(() => {
-        if (mounted) {
-          setDetailLoading(false);
+        if (active) {
+          setState({
+            areaId,
+            detail: null,
+            error:
+              err.message ||
+              "Gagal memuat ringkasan area",
+          });
         }
       });
 
     return () => {
-      mounted = false;
+      active = false;
     };
   }, [areaId]);
+
+  const detailLoading = state.areaId !== areaId;
+
+  const detail = detailLoading
+    ? null
+    : state.detail;
+
+  const detailError = detailLoading
+    ? ""
+    : state.error;
 
   const reports = Array.isArray(
     detail?.reports
@@ -623,11 +624,11 @@ function SummaryScreen({
 
   const wasteCounts = new Map();
 
-  reports.forEach((r) => {
-    getWasteNames(r).forEach((w) => {
+  reports.forEach((report) => {
+    getWasteNames(report).forEach((name) => {
       wasteCounts.set(
-        w,
-        (wasteCounts.get(w) || 0) + 1
+        name,
+        (wasteCounts.get(name) || 0) + 1
       );
     });
   });
@@ -692,16 +693,12 @@ function SummaryScreen({
                     ? pending
                     : "–"}
                 </strong>
-                <span>
-                  Belum ditangani
-                </span>
+                <span>Belum ditangani</span>
               </div>
 
               <div>
                 <strong>
-                  {reports.length
-                    ? done
-                    : "–"}
+                  {reports.length ? done : "–"}
                 </strong>
                 <span>Selesai</span>
               </div>
@@ -718,17 +715,14 @@ function SummaryScreen({
                   .map(([name, count]) => (
                     <div key={name}>
                       <span>{name}</span>
-                      <span>
-                        {count} laporan
-                      </span>
+                      <span>{count} laporan</span>
                     </div>
                   ))}
               </div>
             ) : (
               <p className="og-summary-note">
-                Rincian jenis sampah belum
-                tersedia pada data laporan
-                area ini.
+                Rincian jenis sampah belum tersedia
+                pada data laporan area ini.
               </p>
             )}
 
@@ -749,35 +743,35 @@ function SummaryScreen({
                       )
                   )
                   .slice(0, 3)
-                  .map((r) => (
+                  .map((report) => (
                     <div
                       className="og-summary-report"
-                      key={r.id}
+                      key={report.id}
                     >
                       <h4>
-                        {r.locationName ||
-                          `Laporan #${r.id}`}
+                        {report.locationName ||
+                          `Laporan #${report.id}`}
                       </h4>
 
                       <p>
-                        {levelName(r) ||
+                        {levelName(report) ||
                           "Status"}{" "}
                         ·{" "}
-                        {r.createdAt
+                        {report.createdAt
                           ? new Date(
-                              r.createdAt
+                              report.createdAt
                             ).toLocaleDateString(
                               "id-ID"
                             )
-                          : r.status ||
+                          : report.status ||
                             "Terverifikasi"}
                       </p>
                     </div>
                   ))
               ) : (
                 <p className="og-summary-note">
-                  Belum ada detail laporan
-                  yang bisa ditampilkan.
+                  Belum ada detail laporan yang
+                  bisa ditampilkan.
                 </p>
               )}
             </div>
@@ -790,9 +784,8 @@ function SummaryScreen({
             </Link>
 
             <p className="og-summary-note">
-              Peta hanya menampilkan area
-              laporan yang sudah diverifikasi
-              Admin.
+              Peta hanya menampilkan area laporan
+              yang sudah diverifikasi Admin.
             </p>
           </>
         )}
@@ -806,10 +799,7 @@ export default function MobilePublicMapPage() {
   const navigate = useNavigate();
 
   const params = useMemo(
-    () =>
-      new URLSearchParams(
-        location.search
-      ),
+    () => new URLSearchParams(location.search),
     [location.search]
   );
 
@@ -821,48 +811,51 @@ export default function MobilePublicMapPage() {
   );
 
   const [areas, setAreas] = useState([]);
-  const [areaDetails, setAreaDetails] =
-    useState(null);
 
   const [selectedId, setSelectedId] = useState(
     params.get("area") || ""
   );
 
-  const [loading, setLoading] = useState(true);
-  const [filterLoading, setFilterLoading] =
-    useState(false);
+  const [mapState, setMapState] = useState({
+    loading: true,
+    error: "",
+  });
 
-  const [error, setError] = useState("");
+  const [filterState, setFilterState] = useState({
+    key: "",
+    details: null,
+    failed: 0,
+  });
 
   useEffect(() => {
-    let mounted = true;
+    let active = true;
 
     getHeatmap()
       .then((result) => {
-        if (mounted) {
-          setAreas(
-            Array.isArray(result)
-              ? result
-              : []
-          );
-        }
+        if (!active) return;
+
+        setAreas(
+          Array.isArray(result) ? result : []
+        );
+
+        setMapState({
+          loading: false,
+          error: "",
+        });
       })
       .catch((err) => {
-        if (mounted) {
-          setError(
-            err.message ||
-              "Gagal memuat peta"
-          );
-        }
-      })
-      .finally(() => {
-        if (mounted) {
-          setLoading(false);
+        if (active) {
+          setMapState({
+            loading: false,
+            error:
+              err.message ||
+              "Gagal memuat peta",
+          });
         }
       });
 
     return () => {
-      mounted = false;
+      active = false;
     };
   }, []);
 
@@ -871,102 +864,118 @@ export default function MobilePublicMapPage() {
     params.has("levels") ||
     params.has("days");
 
-  useEffect(() => {
-    if (
-      !detailedFilter ||
-      !areas.length ||
-      isFilter ||
-      areaMatch
-    ) {
-      setAreaDetails(null);
-      return;
-    }
+  const needDetails =
+    detailedFilter &&
+    !isFilter &&
+    !areaMatch &&
+    areas.length > 0;
 
-    let mounted = true;
-    setFilterLoading(true);
+  const filterKey = `${
+    location.search
+  }|${areas.map((area) => area.areaId).join(",")}`;
+
+  useEffect(() => {
+    if (!needDetails) return;
+
+    let active = true;
 
     Promise.allSettled(
       areas.map((area) =>
         readDetail(area.areaId)
       )
-    )
-      .then((results) => {
-        if (!mounted) return;
+    ).then((results) => {
+      if (!active) return;
 
-        const byId = new Map();
+      const details = new Map();
+      let failed = 0;
 
-        results.forEach((result, index) => {
-          if (
-            result.status === "fulfilled"
-          ) {
-            byId.set(
-              String(areas[index].areaId),
-              result.value
-            );
-          }
-        });
-
-        setAreaDetails(byId);
-      })
-      .finally(() => {
-        if (mounted) {
-          setFilterLoading(false);
+      results.forEach((result, index) => {
+        if (result.status === "fulfilled") {
+          details.set(
+            String(areas[index].areaId),
+            result.value
+          );
+        } else {
+          failed += 1;
         }
       });
 
-    return () => {
-      mounted = false;
-    };
-  }, [
-    areas,
-    detailedFilter,
-    isFilter,
-    location.search,
-  ]);
-
-  const shown = useMemo(() => {
-    return areas.filter((area) => {
-      if (!getCoord(area)) {
-        return false;
-      }
-
-      if (
-        !params.has("q") &&
-        !detailedFilter
-      ) {
-        return true;
-      }
-
-      const titleMatch = (
-        area.latestReport?.locationName ||
-        ""
-      )
-        .toLowerCase()
-        .includes(
-          (params.get("q") || "").toLowerCase()
-        );
-
-      if (detailedFilter) {
-        if (!areaDetails) return false;
-
-        const reports =
-          areaDetails.get(
-            String(area.areaId)
-          )?.reports || [];
-
-        return reports.some((report) =>
-          matchesReport(report, params)
-        );
-      }
-
-      return titleMatch;
+      setFilterState({
+        key: filterKey,
+        details,
+        failed,
+      });
     });
-  }, [
-    areas,
-    params,
-    detailedFilter,
-    areaDetails,
-  ]);
+
+    return () => {
+      active = false;
+    };
+  }, [needDetails, areas, filterKey]);
+
+  const filterLoading =
+    needDetails &&
+    filterState.key !== filterKey;
+
+  const areaDetails =
+    needDetails && !filterLoading
+      ? filterState.details
+      : null;
+
+  const filterError =
+    !filterLoading &&
+    needDetails &&
+    filterState.failed > 0
+      ? `Detail ${filterState.failed} area gagal dimuat. Hasil filter mungkin belum lengkap.`
+      : "";
+
+  const shown = useMemo(
+    () =>
+      areas.filter((area) => {
+        if (!getCoord(area)) {
+          return false;
+        }
+
+        if (
+          !params.has("q") &&
+          !detailedFilter
+        ) {
+          return true;
+        }
+
+        const titleMatch = String(
+          area.latestReport?.locationName || ""
+        )
+          .toLowerCase()
+          .includes(
+            (
+              params.get("q") || ""
+            ).toLowerCase()
+          );
+
+        if (detailedFilter) {
+          if (!areaDetails) {
+            return false;
+          }
+
+          const reports =
+            areaDetails.get(
+              String(area.areaId)
+            )?.reports || [];
+
+          return reports.some((report) =>
+            matchesReport(report, params)
+          );
+        }
+
+        return titleMatch;
+      }),
+    [
+      areas,
+      params,
+      detailedFilter,
+      areaDetails,
+    ]
+  );
 
   if (isFilter) {
     return (
@@ -984,8 +993,8 @@ export default function MobilePublicMapPage() {
           areaMatch[1]
         )}
         areas={areas}
-        loading={loading}
-        error={error}
+        loading={mapState.loading}
+        error={mapState.error}
       />
     );
   }
@@ -1052,22 +1061,18 @@ export default function MobilePublicMapPage() {
             {shown.map((area) => {
               const coord = getCoord(area);
 
+              const color = getAreaColor(
+                Number(area.totalReports || 0)
+              );
+
               return (
                 <Fragment key={area.areaId}>
                   <Circle
                     center={coord}
                     radius={20}
                     pathOptions={{
-                      color: getAreaColor(
-                        Number(
-                          area.totalReports || 0
-                        )
-                      ),
-                      fillColor: getAreaColor(
-                        Number(
-                          area.totalReports || 0
-                        )
-                      ),
+                      color,
+                      fillColor: color,
                       fillOpacity: 0.3,
                       weight: 1,
                     }}
@@ -1122,26 +1127,36 @@ export default function MobilePublicMapPage() {
           </MapContainer>
         </div>
 
-        {loading || filterLoading ? (
+        {mapState.loading || filterLoading ? (
           <p
             role="status"
             className="og-map-message"
           >
             Memuat data peta...
           </p>
-        ) : error ? (
+        ) : mapState.error ? (
           <p
             role="alert"
             className="og-map-message text-red-600"
           >
-            {error}
+            {mapState.error}
           </p>
-        ) : shown.length === 0 ? (
+        ) : shown.length === 0 &&
+          !filterError ? (
           <p className="og-map-message">
             Tidak ada area yang sesuai
             dengan filter.
           </p>
         ) : null}
+
+        {filterError && (
+          <p
+            role="alert"
+            className="og-map-message text-red-600"
+          >
+            {filterError}
+          </p>
+        )}
 
         <p className="og-mobile-map-legend">
           Titik biru: laporan terverifikasi
@@ -1166,7 +1181,8 @@ export default function MobilePublicMapPage() {
 
         <p className="og-mobile-subtitle">
           Peta publik dapat dilihat tanpa
-          masuk. Masuk untuk mengirim laporan.
+          masuk. Masuk untuk mengirim
+          laporan.
         </p>
       </main>
     </div>

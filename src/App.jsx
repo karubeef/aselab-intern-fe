@@ -1,9 +1,6 @@
 
-import { useEffect, useState } from "react";
-import {
-  Navigate,
-  useLocation,
-} from "react-router-dom";
+import { useEffect, useSyncExternalStore } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 
 import AppRoutes from "./routes/AppRoutes";
 
@@ -15,41 +12,30 @@ import MobileGuidePage from "./pages/mobile/MobileGuidePage";
 import "./styles/mobile-public.css";
 import "./styles/og-scroll-fix.css";
 
-function useMobileWidth() {
-  const [mobile, setMobile] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
+const MOBILE_QUERY = "(max-width: 767px)";
 
-    return window.matchMedia(
-      "(max-width: 767px)"
-    ).matches;
-  });
+function subscribeMobile(callback) {
+  const media = window.matchMedia(MOBILE_QUERY);
 
-  useEffect(() => {
-    const query = window.matchMedia(
-      "(max-width: 767px)"
-    );
+  media.addEventListener("change", callback);
 
-    const update = (event) => {
-      setMobile(event.matches);
-    };
+  return () => {
+    media.removeEventListener("change", callback);
+  };
+}
 
-    setMobile(query.matches);
-
-    query.addEventListener("change", update);
-
-    return () => {
-      query.removeEventListener("change", update);
-    };
-  }, []);
-
-  return mobile;
+function getMobileSnapshot() {
+  return window.matchMedia(MOBILE_QUERY).matches;
 }
 
 export default function App() {
   const location = useLocation();
-  const mobile = useMobileWidth();
+
+  const mobile = useSyncExternalStore(
+    subscribeMobile,
+    getMobileSnapshot,
+    () => false
+  );
 
   const path = location.pathname;
 
@@ -99,9 +85,7 @@ export default function App() {
       screen = (
         <MobileGuidePage
           kind={
-            path === "/faq"
-              ? "faq"
-              : "steps"
+            path === "/faq" ? "faq" : "steps"
           }
         />
       );

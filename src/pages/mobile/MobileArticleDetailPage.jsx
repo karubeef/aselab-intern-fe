@@ -1,14 +1,6 @@
 
-import {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-
-import {
-  Link,
-  useLocation,
-} from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 
 import {
   getAllInformasi,
@@ -35,51 +27,47 @@ export default function MobileArticleDetailPage() {
     location.pathname.split("/")[2] || ""
   );
 
-  const [article, setArticle] = useState(null);
-  const [related, setRelated] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [result, setResult] = useState({
+    id: null,
+    article: null,
+    related: [],
+    error: "",
+  });
 
   useEffect(() => {
     let active = true;
-
-    setLoading(true);
-    setError("");
-    setArticle(null);
-    setRelated([]);
 
     Promise.all([
       getInformasiById(id),
       getAllInformasi(),
     ])
-      .then(([detail, items]) => {
+      .then(([article, articles]) => {
         if (!active) return;
 
-        setArticle(detail);
-
-        const recommendations = (
-          Array.isArray(items) ? items : []
-        )
-          .filter(
-            (item) =>
-              String(item.id) !== String(id)
+        setResult({
+          id,
+          article,
+          related: (
+            Array.isArray(articles) ? articles : []
           )
-          .slice(0, 2);
+            .filter(
+              (item) =>
+                String(item.id) !== String(id)
+            )
+            .slice(0, 2),
+          error: "",
+        });
+      })
+      .catch((error) => {
+        if (!active) return;
 
-        setRelated(recommendations);
-      })
-      .catch((err) => {
-        if (active) {
-          setError(
-            err.message ||
-              "Artikel gagal dimuat"
-          );
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
+        setResult({
+          id,
+          article: null,
+          related: [],
+          error:
+            error.message || "Artikel gagal dimuat",
+        });
       });
 
     return () => {
@@ -87,19 +75,19 @@ export default function MobileArticleDetailPage() {
     };
   }, [id]);
 
-  const date = useMemo(() => {
-    if (!article?.createdAt) {
-      return "";
-    }
+  const loading = result.id !== id;
 
-    return new Date(
-      article.createdAt
-    ).toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  }, [article?.createdAt]);
+  const { article, related, error } = result;
+
+  const date = article?.createdAt
+    ? new Date(
+        article.createdAt
+      ).toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "";
 
   return (
     <div className="og-mobile-article og-mobile-standalone min-h-screen bg-white text-[#101C43]">
