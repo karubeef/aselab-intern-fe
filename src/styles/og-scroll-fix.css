@@ -1,0 +1,134 @@
+
+html {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+
+.og-page-fade {
+  width: 100%;
+  min-height: 100%;
+}
+
+@media (max-width: 1023px) {
+  html {
+    height: auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body:not(:has(.og-mobile-menu, .og-dashboard-drawer)) {
+    position: static !important;
+    height: auto !important;
+    min-height: 100dvh;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    touch-action: pan-y;
+  }
+
+  body:has(.og-mobile-menu),
+  body:has(.og-dashboard-drawer) {
+    overflow: hidden !important;
+  }
+
+  #root {
+    height: auto !important;
+    min-height: 100dvh;
+    overflow: visible !important;
+  }
+
+  .og-page-fade {
+    height: auto !important;
+    min-height: 100dvh;
+    overflow: visible !important;
+  }
+
+  .og-app-shell {
+    height: auto !important;
+    min-height: 100dvh !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .og-app-shell > .og-shell-main {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .og-app-shell .og-main-panel {
+    height: auto !important;
+    min-height: calc(100dvh - 16px);
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .og-app-shell .og-page-content {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .og-mobile-standalone {
+    height: auto !important;
+    min-height: 100dvh;
+    max-height: none !important;
+    overflow-y: visible !important;
+  }
+
+  .og-mobile-menu,
+  .og-dashboard-drawer-panel {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (min-width: 1024px) {
+  .og-app-shell {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .og-app-shell > .og-shell-main {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .og-app-shell .og-main-panel {
+    height: calc(100dvh - 32px);
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .og-app-shell
+    .og-main-panel::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

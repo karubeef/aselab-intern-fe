@@ -1,5 +1,10 @@
 
-import { useEffect, useRef } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import {
   Link,
   useLocation,
@@ -9,98 +14,105 @@ import {
 import logoBlue from "../../assets/oceanguard-logo.png";
 import logoWhite from "../../assets/oceanguard-logo-w.png";
 
-const SCROLL_DURATION = 850;
+const DURATION = 780;
 
-function easeInOutCubic(progress) {
-  return progress < 0.5
-    ? 4 * progress * progress * progress
-    : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+function easing(t) {
+  return t < 0.5
+    ? 4 * t * t * t
+    : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 export default function PublicNavbar({
   transparent = false,
 }) {
-  const location = useLocation();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const animationRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const animation = useRef(null);
 
   const logo = transparent ? logoWhite : logoBlue;
 
-  function cancelScroll() {
-    if (animationRef.current !== null) {
-      window.cancelAnimationFrame(
-        animationRef.current
-      );
-      animationRef.current = null;
+  const stop = () => {
+    if (animation.current !== null) {
+      cancelAnimationFrame(animation.current);
+      animation.current = null;
     }
-  }
+  };
 
-  function smoothScrollTo(sectionId) {
-    const section = document.getElementById(sectionId);
+  function scrollSection(id) {
+    const element = document.getElementById(id);
 
-    if (!section) return;
+    if (!element) return;
 
-    cancelScroll();
+    stop();
 
-    const reducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-
-    const startY = window.scrollY;
-
-    const targetY = Math.max(
+    const end = Math.max(
       0,
-      section.getBoundingClientRect().top +
-        window.scrollY -
+      window.scrollY +
+        element.getBoundingClientRect().top -
         12
     );
 
-    if (reducedMotion) {
-      window.scrollTo(0, targetY);
+    if (
+      window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches
+    ) {
+      window.scrollTo(0, end);
       return;
     }
 
-    const distance = targetY - startY;
+    const start = window.scrollY;
+    const change = end - start;
 
-    if (Math.abs(distance) < 2) return;
+    let started;
 
-    let startTime = null;
-
-    function animateScroll(timestamp) {
-      if (startTime === null) {
-        startTime = timestamp;
+    function frame(time) {
+      if (started == null) {
+        started = time;
       }
 
-      const elapsed = timestamp - startTime;
-      const progress = Math.min(
-        elapsed / SCROLL_DURATION,
+      const t = Math.min(
+        (time - started) / DURATION,
         1
       );
 
-      const easedProgress =
-        easeInOutCubic(progress);
-
       window.scrollTo(
         0,
-        startY + distance * easedProgress
+        start + change * easing(t)
       );
 
-      if (progress < 1) {
-        animationRef.current =
-          window.requestAnimationFrame(
-            animateScroll
-          );
-      } else {
-        animationRef.current = null;
-      }
+      animation.current =
+        t < 1 ? requestAnimationFrame(frame) : null;
     }
 
-    animationRef.current =
-      window.requestAnimationFrame(
-        animateScroll
-      );
+    animation.current = requestAnimationFrame(frame);
   }
+
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname, location.hash]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const old = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKey = (event) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", onKey);
+
+    return () => {
+      document.body.style.overflow = old;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (
@@ -110,127 +122,233 @@ export default function PublicNavbar({
       return;
     }
 
-    const sectionId = decodeURIComponent(
+    const id = decodeURIComponent(
       location.hash.slice(1)
     );
 
-    const frame = window.requestAnimationFrame(
-      () => {
-        smoothScrollTo(sectionId);
-      }
-    );
+    const frame = requestAnimationFrame(() => {
+      scrollSection(id);
+    });
 
     return () => {
-      window.cancelAnimationFrame(frame);
-      cancelScroll();
+      cancelAnimationFrame(frame);
+      stop();
     };
   }, [location.pathname, location.hash]);
 
   useEffect(() => {
-    return () => {
-      cancelScroll();
-    };
+    return () => stop();
   }, []);
 
-  function handleSectionClick(event, sectionId) {
+  function onSection(event, id) {
     event.preventDefault();
+    setOpen(false);
 
-    const targetHash = `#${sectionId}`;
+    if (
+      window.matchMedia(
+        "(max-width: 767px)"
+      ).matches
+    ) {
+      navigate(
+        id === "faq" ? "/faq" : "/cara-kerja"
+      );
+      return;
+    }
 
-    if (location.pathname === "/") {
-      if (location.hash === targetHash) {
-        smoothScrollTo(sectionId);
-      } else {
-        navigate(`/${targetHash}`);
-      }
+    if (
+      location.pathname === "/" &&
+      location.hash === `#${id}`
+    ) {
+      scrollSection(id);
     } else {
-      navigate(`/${targetHash}`);
+      navigate(`/#${id}`);
     }
   }
 
+  const menuLinks = [
+    { label: "Beranda", to: "/" },
+    { label: "Peta Publik", to: "/public-map" },
+    { label: "Cara Kerja", to: "/cara-kerja" },
+    {
+      label: "Informasi & Edukasi",
+      to: "/informasi",
+    },
+    { label: "FAQ", to: "/faq" },
+  ];
+
   return (
-    <header
-      className={
-        transparent
-          ? "absolute inset-x-0 top-0 z-30 text-white"
-          : "relative z-30 border-b border-slate-200 bg-white text-[#10254A]"
-      }
-    >
-      <div className="mx-auto flex min-h-20 max-w-7xl items-center justify-between gap-5 px-5 sm:px-8">
-        <Link
-          to="/"
-          className="flex shrink-0 items-center gap-3"
-        >
-          <img
-            src={logo}
-            alt="Logo OceanGuard"
-            className="h-11 w-11 shrink-0 object-contain"
-          />
-
-          <span className="text-xl font-bold">
-            OceanGuard
-          </span>
-        </Link>
-
-        <nav className="hidden items-center gap-7 text-sm font-medium md:flex">
+    <>
+      <header
+        className={
+          transparent
+            ? "absolute inset-x-0 top-0 z-30 text-white"
+            : "relative z-30 border-b border-slate-200 bg-white text-[#10254A]"
+        }
+      >
+        <div className="mx-auto flex min-h-20 max-w-7xl items-center justify-between gap-5 px-5 sm:px-8">
           <Link
-            to="/public-map"
-            className="transition-opacity duration-200 hover:opacity-75"
+            to="/"
+            className="flex shrink-0 items-center gap-3"
           >
-            Peta
+            <img
+              src={logo}
+              alt="OceanGuard"
+              className="h-11 w-11 shrink-0 object-contain"
+            />
+
+            <span className="text-xl font-bold">
+              OceanGuard
+            </span>
           </Link>
 
-          <Link
-            to="/#cara-kerja"
-            onClick={(event) =>
-              handleSectionClick(
-                event,
-                "cara-kerja"
-              )
-            }
-            className="transition-opacity duration-200 hover:opacity-75"
-          >
-            Cara Kerja
-          </Link>
+          <nav className="hidden items-center gap-7 text-sm font-medium md:flex">
+            <Link
+              to="/public-map"
+              className="hover:underline"
+            >
+              Peta
+            </Link>
 
-          <Link
-            to="/informasi"
-            className="transition-opacity duration-200 hover:opacity-75"
-          >
-            Informasi
-          </Link>
+            <Link
+              to="/#cara-kerja"
+              onClick={(e) =>
+                onSection(e, "cara-kerja")
+              }
+              className="hover:underline"
+            >
+              Cara Kerja
+            </Link>
 
-          <Link
-            to="/#faq"
-            onClick={(event) =>
-              handleSectionClick(event, "faq")
-            }
-            className="transition-opacity duration-200 hover:opacity-75"
-          >
-            FAQ
-          </Link>
-        </nav>
+            <Link
+              to="/informasi"
+              className="hover:underline"
+            >
+              Informasi
+            </Link>
 
-        <div className="flex shrink-0 gap-2">
-          <Link
-            to="/login"
-            className={`rounded-lg border px-4 py-2 text-sm font-semibold transition-colors duration-200 ${
-              transparent
-                ? "border-white/70 text-white hover:bg-white/10"
-                : "border-[#0B3D91] text-[#0B3D91] hover:bg-blue-50"
-            }`}
-          >
-            Masuk
-          </Link>
+            <Link
+              to="/#faq"
+              onClick={(e) =>
+                onSection(e, "faq")
+              }
+              className="hover:underline"
+            >
+              FAQ
+            </Link>
+          </nav>
 
-          <Link
-            to="/register"
-            className="rounded-lg bg-[#0B3D91] px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[#082D71]"
+          <div className="hidden gap-2 md:flex">
+            <Link
+              to="/login"
+              className={`rounded-lg border px-4 py-2 text-sm font-semibold ${
+                transparent
+                  ? "border-white/70 text-white hover:bg-white/10"
+                  : "border-[#0B3D91] text-[#0B3D91] hover:bg-blue-50"
+              }`}
+            >
+              Masuk
+            </Link>
+
+            <Link
+              to="/register"
+              className="rounded-lg bg-[#0B3D91] px-4 py-2 text-sm font-semibold text-white"
+            >
+              Daftar
+            </Link>
+          </div>
+
+          <button
+            type="button"
+            aria-label="Buka menu navigasi"
+            aria-expanded={open}
+            onClick={() => setOpen(true)}
+            className="og-mobile-hamburger md:hidden"
           >
-            Daftar
-          </Link>
+            <span />
+            <span />
+            <span />
+          </button>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {open &&
+        createPortal(
+          <div
+            className="og-mobile-menu"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu navigasi OceanGuard"
+          >
+            <div className="og-mobile-menu-head">
+              <Link
+                to="/"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3"
+              >
+                <img
+                  src={logoBlue}
+                  alt="OceanGuard"
+                  className="h-11 w-11 object-contain"
+                />
+
+                <span className="text-xl font-bold text-[#0E1E4D]">
+                  OceanGuard
+                </span>
+              </Link>
+
+              <button
+                type="button"
+                aria-label="Tutup menu"
+                onClick={() => setOpen(false)}
+                className="og-mobile-hamburger og-hamburger-blue"
+              >
+                <span />
+                <span />
+                <span />
+              </button>
+            </div>
+
+            <div className="og-mobile-menu-content">
+              <h1>Jelajahi OceanGuard</h1>
+
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="og-mobile-menu-link"
+              >
+                Tutup Menu
+              </button>
+
+              {menuLinks.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setOpen(false)}
+                  className="og-mobile-menu-link"
+                >
+                  {item.label}
+                </Link>
+              ))}
+
+              <Link
+                to="/login"
+                onClick={() => setOpen(false)}
+                className="og-mobile-menu-link og-menu-primary"
+              >
+                Masuk
+              </Link>
+
+              <Link
+                to="/register"
+                onClick={() => setOpen(false)}
+                className="og-mobile-menu-link"
+              >
+                Daftar
+              </Link>
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
   );
 }

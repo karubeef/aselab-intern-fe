@@ -1,17 +1,139 @@
 
-import { useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import {
+  Navigate,
+  useLocation,
+} from "react-router-dom";
+
 import AppRoutes from "./routes/AppRoutes";
-import "./styles/page-transitions.css";
+
+import MobileInformationPage from "./pages/mobile/MobileInformationPage";
+import MobileArticleDetailPage from "./pages/mobile/MobileArticleDetailPage";
+import MobilePublicMapPage from "./pages/mobile/MobilePublicMapPage";
+import MobileGuidePage from "./pages/mobile/MobileGuidePage";
+
+import "./styles/mobile-public.css";
+import "./styles/og-scroll-fix.css";
+
+function useMobileWidth() {
+  const [mobile, setMobile] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.matchMedia(
+      "(max-width: 767px)"
+    ).matches;
+  });
+
+  useEffect(() => {
+    const query = window.matchMedia(
+      "(max-width: 767px)"
+    );
+
+    const update = (event) => {
+      setMobile(event.matches);
+    };
+
+    setMobile(query.matches);
+
+    query.addEventListener("change", update);
+
+    return () => {
+      query.removeEventListener(
+        "change",
+        update
+      );
+    };
+  }, []);
+
+  return mobile;
+}
 
 export default function App() {
   const location = useLocation();
+  const mobile = useMobileWidth();
+
+  const path = location.pathname;
+
+  useEffect(() => {
+    document.body.style.removeProperty(
+      "overflow"
+    );
+
+    document.documentElement.style.removeProperty(
+      "overflow"
+    );
+
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "instant",
+    });
+  }, [path]);
+
+  let screen = <AppRoutes />;
+
+  if (
+    !mobile &&
+    (path === "/cara-kerja" ||
+      path === "/faq")
+  ) {
+    screen = (
+      <Navigate
+        to={
+          path === "/faq"
+            ? "/#faq"
+            : "/#cara-kerja"
+        }
+        replace
+      />
+    );
+  }
+
+  if (mobile) {
+    if (
+      path === "/public-map" ||
+      path === "/public-map/filter" ||
+      path.startsWith("/public-map/area/")
+    ) {
+      screen = <MobilePublicMapPage />;
+    } else if (path === "/informasi") {
+      screen = <MobileInformationPage />;
+    } else if (
+      /^\/informasi\/[^/]+$/.test(path)
+    ) {
+      screen = <MobileArticleDetailPage />;
+    } else if (
+      path === "/cara-kerja" ||
+      path === "/faq"
+    ) {
+      screen = (
+        <MobileGuidePage
+          kind={
+            path === "/faq"
+              ? "faq"
+              : "steps"
+          }
+        />
+      );
+    }
+  }
 
   return (
     <div
-      key={location.pathname}
-      className="og-page-transition"
+      key={`${
+        mobile ? "mobile" : "desktop"
+      }-${path}`}
+      className={`og-page-fade ${
+        mobile ? "og-mobile-public-root" : ""
+      } ${
+        mobile && path === "/"
+          ? "og-landing-route"
+          : ""
+      }`}
     >
-      <AppRoutes />
+      {screen}
     </div>
   );
 }
