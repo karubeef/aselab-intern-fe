@@ -40,10 +40,7 @@ function useMobileWidth() {
     query.addEventListener("change", update);
 
     return () => {
-      query.removeEventListener(
-        "change",
-        update
-      );
+      query.removeEventListener("change", update);
     };
   }, []);
 
@@ -57,14 +54,6 @@ export default function App() {
   const path = location.pathname;
 
   useEffect(() => {
-    document.body.style.removeProperty(
-      "overflow"
-    );
-
-    document.documentElement.style.removeProperty(
-      "overflow"
-    );
-
     window.scrollTo({
       top: 0,
       left: 0,
@@ -76,8 +65,7 @@ export default function App() {
 
   if (
     !mobile &&
-    (path === "/cara-kerja" ||
-      path === "/faq")
+    (path === "/cara-kerja" || path === "/faq")
   ) {
     screen = (
       <Navigate
@@ -122,10 +110,7 @@ export default function App() {
 
   return (
     <div
-      key={`${
-        mobile ? "mobile" : "desktop"
-      }-${path}`}
-      className={`og-page-fade ${
+      className={`og-app-root ${
         mobile ? "og-mobile-public-root" : ""
       } ${
         mobile && path === "/"
