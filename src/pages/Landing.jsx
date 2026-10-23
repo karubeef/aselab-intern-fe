@@ -472,14 +472,6 @@ export default function Landing() {
               </div>
             ))}
           </div>
-
-          <p className="mt-5 rounded-lg border border-blue-200 px-4 py-3 text-xs leading-relaxed text-[#0B3D91]">
-            Daftar wilayah di atas mengikuti contoh
-            desain Figma. Angka cakupan dinas perlu
-            disambungkan ke data instansi yang
-            terverifikasi sebelum digunakan sebagai
-            informasi resmi.
-          </p>
         </div>
       </section>
 
